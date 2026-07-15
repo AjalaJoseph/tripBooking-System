@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express"
 import { registerBusinessOwnerService,
-    businessOwnerLoginService,
+    businessLoginServicve,
     staffRegistrationService,
     staffLoginServicve,
     updateStaffPasswordService,
@@ -44,7 +44,7 @@ export const handleBusinessLogin = async (req: Request, res: Response, next: Nex
   const { business_email, password } = req.body;
 
   try {
-    const result = await businessOwnerLoginService(business_email, password);
+    const result = await businessLoginServicve(business_email, password);
 
     // 🔒 Cookie Security: Save the refresh token inside a secure HttpOnly block
     res.cookie("refreshToken", result.refreshToken, {
@@ -59,7 +59,7 @@ export const handleBusinessLogin = async (req: Request, res: Response, next: Nex
       status: "success",
       message: "Login successful!",
       accessToken: result.accessToken,
-      business: result.business
+      profile: result.profile
     });
 
   } catch (error) {

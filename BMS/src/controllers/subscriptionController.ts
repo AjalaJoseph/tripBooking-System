@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import axios from "axios"
 import crypto from "crypto";
 import dotenv from "dotenv"
+import { getPaymentService, updateSubscriptionService } from "../services/subscriptionService";
 dotenv.config()
 const PAYSTACK_KEY = process.env.PAYSTACK_TEST_KEY || " "
 export const handleInitializeSubscriptionPayment = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
@@ -15,8 +16,7 @@ export const handleInitializeSubscriptionPayment = async (req: Request, res: Res
          }
          const PaystackPayload ={
             email:email,
-            amount: Number(Plan_price) * 100,
-            callback_url: "http://localhost:5000/dashboard/billing/success", // Frontend redirect post-payment
+            amount: Number(Plan_price) * 100, // Frontend redirect post-payment
             channels: ["card"], 
            metadata: { 
               businessId: id,          // Renamed to businessId to match model schema parameters perfectly
@@ -119,6 +119,37 @@ export const handlePaystackWebhookSettlement = async (req: Request, res: Respons
     res.status(200).send("Webhook Handled Cleanly.");
 
   } catch (error) {
+    next(error);
+  }
+};
+
+//  payment data retriever controller
+export const handleGetPaymentController = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    // 💡 THE SECURITY SHIELD: Extract the corporate businessId, NOT the individual user ID string!
+    const { id } = (req as any).user;
+
+    if (!id) {
+      res.status(401).json({ 
+        status: "fail", 
+        message: "Unauthorized: Access Denied. Valid business workspace context missing." 
+      });
+      return;
+    }
+
+    // Call your payment history data extractor service passing the locked corporate anchor parameter
+    const getPayment = await getPaymentService(id);
+
+    // 🚀 CLEAN UNIFIED RESPONSE: Fires exactly once, satisfying Promise<void> parameters
+    res.status(200).json({
+      status: "success",
+      message: "Business subscription billing ledger histories retrieved successfully.",
+      data: getPayment
+    });
+    return;
+
+  } catch (error) {
+    // Passes system exceptions down to your central global error handling middleware pipelines cleanly
     next(error);
   }
 };

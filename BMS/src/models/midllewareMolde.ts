@@ -28,3 +28,12 @@ export const countTenantSales = async (businessId: string, billingCycleStart: Da
     }
   });
 };
+
+// count total staff register
+export const countStaffRegister = async (businessId:string) =>{
+  return await prisma.user.count({
+    where:{
+      businessId:businessId
+    },
+  })
+} 

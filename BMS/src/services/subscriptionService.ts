@@ -1,4 +1,4 @@
-import { updateSubscription } from "../models/subscriptionModel";
+import { updateSubscription, getPaymentModel } from "../models/subscriptionModel";
 export const updateSubscriptionService = async(businessId:string, plan_name:string, plan_price:string, reference:string) =>{
     const now = new Date()
     const startAtDate = new Date(now);
@@ -42,4 +42,9 @@ export const updateSubscriptionService = async(businessId:string, plan_name:stri
 
             return await updateSubscription(payloadDataBundle);
 
+}
+
+//  get all payment made by business owner 
+export const getPaymentService = async (businessId:string) =>{
+    return await getPaymentModel(businessId)
 }

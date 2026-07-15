@@ -92,8 +92,8 @@ export const validateStaffInput = [
 export const validateStaffLoginInput=[
   body("staff_email")
     .trim()
-    .notEmpty().withMessage("Business Email field is required")
-    .isEmail().withMessage('Kindly provide a valid business email address')
+    .notEmpty().withMessage("Staff Email field is required")
+    .isEmail().withMessage('Kindly provide a valid  email address')
     .normalizeEmail(),
     body('password')
       .notEmpty()
@@ -115,7 +115,7 @@ export const validateStaffLoginInput=[
 // validate password change
 export const validateStaffPasswordInput =[
   body('new_password')
-    .notEmpty().withMessage("password field is required") // Removed .trim() for character flexibility
+    .notEmpty().withMessage("new_password field is required") // Removed .trim() for character flexibility
     .isStrongPassword().withMessage("password must be at least 8 character contain 1 uppercase, 1 lowercase, 1 symbol, and number"),
 
   // 💡 Explicitly type your middleware arguments to satisfy the compiler

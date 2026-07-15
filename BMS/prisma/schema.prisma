@@ -132,8 +132,8 @@ model Product {
 
 /// Sales records for financial tracking
 enum PaymentMethod {
-  Cash
-  POS
+  CASH
+  CARD
   TRANSFER
 }
 model Sale {

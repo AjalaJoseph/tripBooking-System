@@ -9,19 +9,19 @@ export const validateSalesCheckoutInput = [
     .isIn(['CASH', 'CARD', 'TRANSFER']).withMessage('Invalid payment method. Choose exactly: CASH, CARD, or TRANSFER.'),
 
   // 2. Validate Products Shopping Basket Array
-  body('products')
+  body('items')
     .isArray({ min: 1 }).withMessage('The transaction payload must contain a products array block with at least 1 item.'),
 
   // 3. Dynamically Scan Every Field Inside the Products Array Row Blocks
-  body('products.*.product_name')
+  body('items.*.product_name')
     .trim()
     .notEmpty().withMessage('Product name is required for all line items.'),
 
-  body('products.*.unit_price')
+  body('items.*.unit_price')
     .notEmpty().withMessage('Unit price parameter is required for all items.')
     .isFloat({ min: 0.01 }).withMessage('Unit price must be a valid positive float number greater than 0.'),
 
-  body('products.*.quantity')
+  body('items.*.quantity')
     .notEmpty().withMessage('Quantity value is required for all line items.')
     .isInt({ min: 1 }).withMessage('Quantity must be a valid positive integer greater than 0.'),
 

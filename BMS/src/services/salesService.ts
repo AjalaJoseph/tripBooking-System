@@ -6,7 +6,6 @@ import { createSalesModel,
  } from "../models/salesModel";
 import { staffData } from "../models/userModel";
 export const createSalesService = async (userId:string,paymentMethod:string, salesData:any[]) =>{
-    console.log("service sales",userId)
     const staff = await staffData(userId)
     if(!staff){
         throw Object.assign(new Error("Staff workstation profile not found on server grid."), {STATUS_CODES:404})

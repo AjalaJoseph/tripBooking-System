@@ -48,3 +48,20 @@ export const updateSubscription = async (data: any) =>{
                 return updateSubscription
     })
 }
+
+//  get all payment made by business owner
+export const getPaymentModel = async (businessId :string) =>{
+    const payment = await prisma.payment.findMany({
+        where:{
+            business_id:businessId
+        },
+        select:{
+            id:true,
+            reference:true,
+            amount:true,
+            payment_status:true,
+            paid_at:true
+        }
+    })
+    return payment
+}

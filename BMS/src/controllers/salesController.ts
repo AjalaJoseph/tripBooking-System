@@ -10,10 +10,10 @@ export const handlePOSCheckout = async (req: Request, res: Response, next: NextF
     // Extract the active cashier's user ID from their verified token guard session
     const { id } = (req as any).user;
     // Pull the products list array and payment format sent by your frontend dashboard layout
-    const { products, payment_method } = req.body;
+    const { items, payment_method } = req.body;
 
     // Execute your high-speed array processing checkout service layer
-    const completedInvoice = await createSalesService(id, payment_method, products);
+    const completedInvoice = await createSalesService(id, payment_method, items);
     res.status(201).json({
       status: "success",
       message: "Transaction compiled and logged successfully. Invoice generated.",

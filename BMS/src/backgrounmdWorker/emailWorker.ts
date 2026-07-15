@@ -1,5 +1,6 @@
 import { Worker ,Job} from "bullmq";
 import { redis } from "../config/redis";
+import { logger } from "../config/logger";
 import { sendStaffWelcomeEmail, sendStaffUpdateEmail, forgotPasswordOtpEmail } from "../backgroundJobs/emailJobs";
 export const staffOnboardingWorker = new Worker('staff-onboarding', async (job:Job) =>{
     //  console.log("📥 [Worker Picked Up Job]:", job.data);
@@ -7,7 +8,7 @@ export const staffOnboardingWorker = new Worker('staff-onboarding', async (job:J
         const currentAttempt = job.attemptsMade + 1;
     
     if (job.name === 'send-welcome-email') {
-      console.log(`🔨 [BizFlow Queue]: Processing onboarding job [${job.id}] (Attempt #${currentAttempt})`);
+    logger.info(`🔨 [BizFlow Queue]: Processing onboarding job [${job.id}] (Attempt #${currentAttempt})`);
         const formattedJobData = {
         staff_email: job.data.staff_email, // Fallback check for both variations
         staff_name:  job.data.staff_name , 
@@ -19,7 +20,7 @@ export const staffOnboardingWorker = new Worker('staff-onboarding', async (job:J
     }
     
    if (job.name === 'send-profile-update') {
-      console.log(`🛡️ [BizFlow Queue]: Processing security update job [${job.id}] (Attempt #${currentAttempt})`);
+      logger.info(`🛡️ [BizFlow Queue]: Processing security update job [${job.id}] (Attempt #${currentAttempt})`);
       const updateFormatData ={
         staff_email: job.data.staff_email, // Fallback check for both variations
         staff_name:  job.data.staff_name , 
@@ -32,14 +33,14 @@ export const staffOnboardingWorker = new Worker('staff-onboarding', async (job:J
 
 //     reset password worker
    if (job.name === "forgot-password-otp") {
-         console.log(`🔨 [BizFlow Queue]: Processing password reset OTP job [${job.id}]`);
+        logger.info(`🔨 [BizFlow Queue]: Processing password reset OTP job [${job.id}]`);
         const { email, userName, otpcode } = job.data;
 
         // Execute your secure NodeMailer SMTP delivery pipeline cleanly
         await forgotPasswordOtpEmail(email, userName, otpcode);
 }
     }catch(error){
-        console.log(`❌ send welcome email  method threw an internal error inside job [${job.id}]: ${error}`)
+        logger.error(`❌ send welcome email  method threw an internal error inside job [${job.id}]: ${error}`)
            throw error; 
     }
 } ,
@@ -49,9 +50,9 @@ export const staffOnboardingWorker = new Worker('staff-onboarding', async (job:J
 }
 );
 staffOnboardingWorker.on('completed', (job: Job) => {
-    console.log(`🎉 Onboarding job [${job.id}] completely processed and memory slots wiped from Redis RAM.`);
+    logger.info(`🎉 Onboarding job [${job.id}] completely processed and memory slots wiped from Redis RAM.`);
 });
 
 staffOnboardingWorker.on('failed', (job: Job | undefined, err: Error) => {
-    console.log(`❌ Background Onboarding Job [${job?.id || 'unknown'}] processing failure: ${err.message}`);
+    logger.error(`❌ Background Onboarding Job [${job?.id || 'unknown'}] processing failure: ${err.message}`);
 });

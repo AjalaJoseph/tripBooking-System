@@ -12,6 +12,7 @@ import { registerBusinessOwner,
     staffResetPassword
  } from "../models/userModel";
  import bcrypt from "bcrypt";
+ import { logger } from '../config/logger';
  import {redis} from "../config/redis"
  import { onboardingQueue } from "../backgroundQueues/emailQueues";
  import { generateAccessToken, generateRefreshToken } from "../ultil/generateToken";
@@ -36,10 +37,10 @@ export const registerBusinessOwnerService = async (data:any) =>{
 }
 
 //  business owner login service
-export const businessOwnerLoginService= async (email:string, password:string) =>{
+export const businessLoginServicve = async (email:string, password:string) =>{
     const businessExist = await getBusinessAccount(email)
     if(!businessExist){
-        throw Object.assign(new Error("Business not found"), {STATUS_CODES:404})
+       throw Object.assign(new Error("Business not found"), {STATUS_CODES:404})
     }
     const isPasswordMatch = await bcrypt.compare(password,businessExist.password)
     if(!isPasswordMatch){
@@ -48,20 +49,24 @@ export const businessOwnerLoginService= async (email:string, password:string) =>
     let accessToken = "";
     let refreshToken = "";
     if(businessExist && businessExist.business_email){
-         accessToken = generateAccessToken(businessExist.business_email, businessExist.id, businessExist.role)
-         refreshToken = generateRefreshToken(businessExist.business_email, businessExist.id, businessExist.role)
+         accessToken = generateAccessToken(businessExist.business_email, businessExist.id,businessExist.role )
+         refreshToken = generateRefreshToken(businessExist.business_email, businessExist.id,businessExist.role )
     }
     const redisKey = `refresh:${businessExist.id}`;
-    // Save to Redis and set it to expire automatically in 7 days (604,800 seconds)
-    // "EX" stands for expiration in seconds
-    await redis.set(redisKey, refreshToken, "EX", 7 * 24 * 60 * 60);
-    delete (businessExist as any).password;
+    await redis.set(redisKey, refreshToken, "EX", 7 * 24 * 60 * 60)
+    delete (businessExist as any).password
     return{
-        business:businessExist,
         accessToken,
-        refreshToken
+        refreshToken,
+        profile:{
+          id:businessExist.id,
+          business_name:businessExist.business_name,
+          business_email:businessExist.business_email,
+          role:businessExist.role
+        }
     }
 }
+
 
 // staff registration service
 export const staffRegistrationService = async (data:any)=>{
@@ -77,7 +82,7 @@ export const staffRegistrationService = async (data:any)=>{
         business_id=businessOwnerData.id
     }
     const temporaryPassword = generateTemporaryPassword(10)
-    console.log(temporaryPassword)
+    // console.log(temporaryPassword)
     const passwordHash = await bcrypt.hash(temporaryPassword,12)
     const registrationPayload={
         business_id:business_id,
