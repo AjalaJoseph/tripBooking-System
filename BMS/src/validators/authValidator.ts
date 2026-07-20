@@ -39,7 +39,7 @@ export const validateBusinessAccountInput = [
 
 // validate login input
 export const validateloginInput=[
-  body("business_email")
+  body("email")
     .trim()
     .notEmpty().withMessage("Business Email field is required")
     .isEmail().withMessage('Kindly provide a valid business email address')
@@ -90,7 +90,7 @@ export const validateStaffInput = [
 
 // validate staff login input
 export const validateStaffLoginInput=[
-  body("staff_email")
+  body("email")
     .trim()
     .notEmpty().withMessage("Staff Email field is required")
     .isEmail().withMessage('Kindly provide a valid  email address')

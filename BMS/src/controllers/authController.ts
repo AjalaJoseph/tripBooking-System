@@ -41,10 +41,10 @@ export const registerBusinessOwnerController = async (req:Request,res:Response, 
 }
 
 export const handleBusinessLogin = async (req: Request, res: Response, next: NextFunction) => {
-  const { business_email, password } = req.body;
+  const { email, password } = req.body;
 
   try {
-    const result = await businessLoginServicve(business_email, password);
+    const result = await businessLoginServicve(email, password);
 
     // 🔒 Cookie Security: Save the refresh token inside a secure HttpOnly block
     res.cookie("refreshToken", result.refreshToken, {
@@ -90,10 +90,10 @@ export const staffRegistrationController = async (req:Request, res:Response, nex
 
 //  staff login controller 
 export const handleStaffLogin = async (req: Request, res: Response, next: NextFunction) => {
-  const { staff_email, password } = req.body;
+  const { email, password } = req.body;
 
   try {
-    const result = await staffLoginServicve(staff_email, password);
+    const result = await staffLoginServicve(email, password);
 
     // 🔒 Cookie Security: Save the refresh token inside a secure HttpOnly block
     res.cookie("refreshToken", result.refreshToken, {
