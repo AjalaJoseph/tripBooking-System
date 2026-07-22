@@ -44,6 +44,19 @@ export const getBusinessAccount = async (email:string) =>{
     const findBusiness = await prisma.business.findUnique({
         where:{
             business_email:email
+        },
+        include:{
+            subscriptions:{
+                include:{
+                    plan:{
+                        select:{
+                            plan_name:true,
+                            max_sales:true,
+                            max_staff:true
+                        }
+                    }
+                }
+            }
         }
     })
     return findBusiness
