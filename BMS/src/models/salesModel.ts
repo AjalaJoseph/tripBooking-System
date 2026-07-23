@@ -150,10 +150,10 @@ export const fetchBusinessRevenueAggregationModel = async (businessId: string, s
 };
 
 //  get Top sales products
-export const fetchTopSellingProductsModel = async (businessId: string, limit: number = 10) => {
+export const fetchTopSellingProductsModel = async (businessId: string, limit: number = 5) => {
   
   const salesAggregation = await prisma.saleItem.groupBy({
-    by: ['productId', 'productName'],
+    by: ['productId', 'productName', "unit_price"],
     where: {
       sale: {
         businessId: businessId // 🔒 Tenant Gate: Joins through the parent Sale record to isolate stores
@@ -169,12 +169,18 @@ export const fetchTopSellingProductsModel = async (businessId: string, limit: nu
     },
     take: limit // Caps the list slice (e.g., Top 5)
   });
-
+//  unit_price
   // 2. Map and clean the raw database output payload for your dashboard charts
-  return salesAggregation.map((item) => ({
-    productName:  item.productName,
-    totalQuantitySold: item._sum.quantity || 0
-  }));
+   return salesAggregation.map((item) => {
+    const totalSold = item._sum.quantity || 0;
+    const unitPrice = Number(item.unit_price) || 0; // Ensures Decimal/Float fields cast cleanly to numbers
+
+    return {
+      productName: item.productName,
+      totalQuantitySold: totalSold,
+      totalIncomeGenerated: totalSold * unitPrice 
+    };
+  });
 };
 
 //  Report generating model

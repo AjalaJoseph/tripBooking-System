@@ -113,7 +113,7 @@ export const handleGetTopSellingProducts = async (req: Request, res: Response, n
 
     // Parse a dynamic limit choice if sent via the URL query string (e.g., ?limit=10)
     const limitStr = req.query.limit as string;
-    const limitNum = Math.max(1, parseInt(limitStr) || 10);
+    const limitNum = Math.max(1, parseInt(limitStr) || 5);
 
     // Trigger your high-speed aggregation engine
     const topProductsMetrics = await getTopSellingProductsService(id, limitNum);

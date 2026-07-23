@@ -20,7 +20,10 @@ const corsConfigurationOptions: CorsOptions = {
   allowedHeaders: ["Content-Type", "Authorization", "idempotency-key", "x-paystack-signature"],
   exposedHeaders: ["x-paystack-signature"],
 };
-app.use(helmet())
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" }, // Allows React to read images/data streams
+  crossOriginOpenerPolicy: { policy: "unsafe-none" }      // Prevents cookie blocking across localhost ports
+}));
 app.use(cors(corsConfigurationOptions))
 app.use(cookiesParser())
 app.use(express.json());

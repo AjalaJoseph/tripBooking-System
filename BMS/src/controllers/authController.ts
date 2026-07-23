@@ -49,8 +49,9 @@ export const handleBusinessLogin = async (req: Request, res: Response, next: Nex
     // 🔒 Cookie Security: Save the refresh token inside a secure HttpOnly block
     res.cookie("refreshToken", result.refreshToken, {
       httpOnly: true,
+      path:"/",
       secure: process.env.NODE_ENV === "production", // Active HTTPS only in production
-      sameSite: "strict",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
       maxAge: 7 * 24 * 60 * 60 * 1000 // Lasts for exactly 7 days
     });
 
@@ -98,8 +99,9 @@ export const handleStaffLogin = async (req: Request, res: Response, next: NextFu
     // 🔒 Cookie Security: Save the refresh token inside a secure HttpOnly block
     res.cookie("refreshToken", result.refreshToken, {
       httpOnly: true,
+      path:"/",
       secure: process.env.NODE_ENV === "production", // Active HTTPS only in production
-      sameSite: "strict",
+       sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
       maxAge: 7 * 24 * 60 * 60 * 1000 // Lasts for exactly 7 days
     });
 
@@ -386,7 +388,7 @@ export const refreshTokenController = async(req:Request, res:Response, next:Next
         const newAccessToken = generateAccessToken(email, id, role)
          res.status(200).json({
             status: "success",
-            message: "Access token token rotation executed successfully.",
+            message: "Access token  rotation executed successfully.",
             accessToken: newAccessToken
         });
         return;

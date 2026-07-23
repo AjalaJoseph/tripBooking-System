@@ -13,5 +13,5 @@ export const saleRouter = Router()
 saleRouter.post('/record-sales',  verifyAccessToken,enforceIdempotencyKeyGate, checkSubscriptionActive, enforceSalesLimit, validateSalesCheckoutInput,handlePOSCheckout)
 saleRouter.get("/my-sales", verifyAccessToken,  handleGetMySalesHistory);
 saleRouter.get('/my-summary', verifyAccessToken, handleGetCashierSalesSummary)
-saleRouter.get("/owner-summary", verifyAccessToken, handleGetBusinessOwnerRevenueSummary)
+saleRouter.get("/overview", verifyAccessToken, handleGetBusinessOwnerRevenueSummary)
 saleRouter.get("/top-products", verifyAccessToken, handleGetTopSellingProducts)

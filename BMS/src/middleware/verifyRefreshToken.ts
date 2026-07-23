@@ -2,13 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 import { redis } from "../config/redis";
-
 dotenv.config();
-
-/**
- * Validates the long-lived refresh token cookie against your fast Redis memory cluster.
- * Strictly adheres to Express middleware and Promise<void> execution constraints.
- */
 export const verifyRefreshToken = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { refreshToken } = req.cookies;
