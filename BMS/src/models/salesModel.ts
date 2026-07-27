@@ -1,5 +1,5 @@
 import { prisma } from "../config/db.js";
-
+import { logger } from "../config/logger.js";
 export const createSalesModel = async (salesData: any) => {
 
   return await prisma.$transaction(async (tx) => {
@@ -248,3 +248,57 @@ export const fetchBusinessReportModel = async (businessId: string, startDate: Da
     };
   });
 };
+
+//  get weekly sales overview model
+export const getWeeklySalesOverviewModel = async (businessId:string) =>{
+  try{
+     const rawData: any[] = await prisma.$queryRaw
+      `SELECT 
+        EXTRACT(DOW FROM "createdAt") AS day_index,
+        TO_CHAR("createdAt", 'Dy') AS day_name,
+        SUM("total_amount") AS total_sales 
+        FROM "sales"                         
+      WHERE "businessId" = ${businessId}
+        AND "createdAt" >= NOW() - INTERVAL '7 days'
+      GROUP BY day_index, day_name
+      ORDER BY day_index ASC;
+    `;
+
+    return rawData.map((row) => ({
+      day_of_week: Number(row.day_index), // Returns numbers 0 (Sunday) through 6 (Saturday)
+      day_label: String(row.day_name),    // Returns formatted strings like "Mon", "Tue", "Wed"
+      total_sales: Number(row.total_sales) || 0 
+    }));
+  }catch (error) {
+    logger.error("Database layer failed to aggregate weekly revenue:", error);
+    throw error; // Re-throw the error so your controller can capture it and send a 500 status
+  }
+}
+
+// getPaymentMethodSplitsModel
+export const getPaymentMethodSplitsModel = async (businessId: string) => {
+  const record = await prisma.sale.groupBy({
+    by:["payment_method"],
+    where:{
+      businessId:businessId
+    },
+     _count: {
+        id: true, // Counts how many times each payment method was used
+      },
+  })
+
+  const totalTransactions = record.reduce((sum, item) => sum + item._count.id, 0);
+
+    if (totalTransactions === 0) {
+      return { cashPercentage: 0, posPercentage: 0, transferPercentage: 0 };
+    }
+
+    const cashCount = record.find(r => r.payment_method === "CASH")?._count.id || 0;
+    const posCount = record.find(r => r.payment_method === "CARD")?._count.id || 0;
+    const transferCount = record.find(r => r.payment_method === "TRANSFER")?._count.id || 0;
+    return {
+      cashPercentage: Math.round((cashCount / totalTransactions) * 100),
+      posPercentage: Math.round((posCount / totalTransactions) * 100),
+      transferPercentage: Math.round((transferCount / totalTransactions) * 100),
+    };
+}

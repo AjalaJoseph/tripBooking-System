@@ -15,6 +15,7 @@ import { registerBusinessOwnerController,
     resetBusinessOwnerPasswordController,
     handleResendForgotPasswordOTP
  } from "../controllers/authController"
+ import { countSalesController } from "../controllers/salesController"
 import { validateBusinessAccountInput,
      validateloginInput, 
      validateStaffInput,
@@ -43,3 +44,4 @@ authRouter.post("/forgot-password",authRateLimiter, ValidateForgotPasswordEmail,
 authRouter.post("/reset-password/staff", ValidateResetPasswordInput, resetStaffPasswordController)
 authRouter.post("/reset-password/owner", ValidateResetPasswordInput, resetBusinessOwnerPasswordController)
 authRouter.post("/resend-otp", handleResendForgotPasswordOTP)
+authRouter.get("/subscription/usage", verifyAccessToken, checkSubscriptionActive, countSalesController)

@@ -3,8 +3,11 @@ import { createSalesModel,
   fetchCashierRevenueSummaryModel,
   fetchBusinessRevenueAggregationModel,
   fetchTopSellingProductsModel,
+  getWeeklySalesOverviewModel,
+  getPaymentMethodSplitsModel
  } from "../models/salesModel";
 import { staffData } from "../models/userModel";
+import { countTenantSales } from "../models/midllewareMolde";
 export const createSalesService = async (userId:string,paymentMethod:string, salesData:any[]) =>{
     const staff = await staffData(userId)
     if(!staff){
@@ -164,4 +167,13 @@ export const getTopSellingProductsService = async (businessId: string, limit: nu
   return await fetchTopSellingProductsModel(businessId, limit);
 };
 
-//  generate report
+//  weekly sales overview service 
+
+export const getWeeklySalesOverviewService = async (businessId:string) =>{
+  return await getWeeklySalesOverviewModel(businessId)
+}
+
+//  count sales makes within a subscription 
+export const paymentMethodSplitService = async (businessId:string) =>{
+return await getPaymentMethodSplitsModel(businessId)
+}
