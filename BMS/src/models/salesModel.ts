@@ -302,3 +302,58 @@ export const getPaymentMethodSplitsModel = async (businessId: string) => {
       transferPercentage: Math.round((transferCount / totalTransactions) * 100),
     };
 }
+
+//  get latest sales record
+export const getLatestSalesModel = async (businessId: string, page: number =1, limit: number = 5) =>{
+   const skip = (page - 1)*limit
+   const totalSales = await prisma.sale.count({
+    where:{
+      businessId:businessId
+    }
+  })
+  const totalPages = Math.ceil(totalSales/limit)
+   const latesSales = await prisma.sale.findMany({
+    where:{
+      businessId:businessId
+    },
+    select:{
+      id:true,
+      recorded_by:true,
+      payment_method:true,
+      total_amount:true,
+      createdAt:true
+    },
+    take:limit,
+    skip:skip,
+    orderBy:{
+      createdAt:"desc"
+    }
+   })
+   return {
+    latesSales,
+     pagination: {
+            totalProducts: totalSales,
+            totalPages: totalPages,
+            currentPage: page,
+            limit: limit,
+            hasNextPage: page < totalPages,
+            hasPreviousPage: page > 1
+        }
+   }
+}
+
+//  get sales descriptuons
+export const salesDescription = async (saleId: string,) =>{
+  return await prisma.saleItem.findMany({
+    where:{
+      saleId:saleId
+    },
+    select:{
+      id:true,
+      unit_price:true,
+      productName:true,
+      total_price:true,
+      quantity:true
+    }
+  })
+}

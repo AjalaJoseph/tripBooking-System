@@ -5,7 +5,9 @@ import { createSalesService,
   getBusinessRevenueSummaryService,
   getTopSellingProductsService,
   getWeeklySalesOverviewService,
-  paymentMethodSplitService
+  paymentMethodSplitService,
+  getLatestSalesService,
+  salesDescriptionService
  } from "../services/salesService.js";
  import { countTenantSales } from "../models/midllewareMolde.js";
 export const handlePOSCheckout = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
@@ -225,6 +227,72 @@ export const paymentMethodSplitController = async (req: Request, res: Response, 
     });
 
   } catch (error: any) {
+    return next(error);
+  }
+};
+
+//  get latest sales controller
+export const getLatestSalesController = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    // 🔥 FIX: Restored your missing user object parameter extraction context
+    const { id, role } = (req as any).user;
+
+    // Safety Gate: Ensure only business owners can access overall historical data lists
+    if (role?.toUpperCase() !== "OWNER") {
+      return res.status(403).json({
+        status: "fail",
+        message: "Unauthorized: Access denied. This data list is strictly reserved for business owners."
+      });
+    }
+
+    const pageStr = req.query.page as string;
+    const limitStr = req.query.limit as string;
+    
+    const page = Math.max(1, parseInt(pageStr) || 1);
+    const limit = Math.max(1, parseInt(limitStr) || 5); 
+
+    // Destructure data and counter limits out of your business logic service layer
+    const sales = await getLatestSalesService(id, page, limit)
+
+    return res.status(200).json({
+      status: "success",
+      data:sales.latesSales,
+      pagination: sales.pagination
+    });
+
+  } catch (error: any) {
+    return next(error);
+  }
+};
+
+// sales Description controllerr
+
+export const handleSalesDecription = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { salesId } = req.params;
+    const sales_id = salesId.toString()
+    if (!salesId) {
+      return res.status(400).json({
+        status: "fail",
+        message: "Validation Error: Missing target transaction identifier code parameter."
+      });
+    }
+
+    const salesDes = await salesDescriptionService(sales_id);
+
+    if (!salesDes) {
+      return res.status(404).json({
+        status: "fail",
+        message: "Resource Not Found: The requested sales invoice record does not exist."
+      });
+    }
+
+    return res.status(200).json({
+      status: "success",
+      data: salesDes
+    });
+
+  } catch (error) {
     return next(error);
   }
 };

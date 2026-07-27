@@ -4,7 +4,9 @@ import { createSalesModel,
   fetchBusinessRevenueAggregationModel,
   fetchTopSellingProductsModel,
   getWeeklySalesOverviewModel,
-  getPaymentMethodSplitsModel
+  getPaymentMethodSplitsModel,
+  salesDescription,
+  getLatestSalesModel
  } from "../models/salesModel";
 import { staffData } from "../models/userModel";
 import { countTenantSales } from "../models/midllewareMolde";
@@ -176,4 +178,14 @@ export const getWeeklySalesOverviewService = async (businessId:string) =>{
 //  count sales makes within a subscription 
 export const paymentMethodSplitService = async (businessId:string) =>{
 return await getPaymentMethodSplitsModel(businessId)
+}
+
+//  current sales 
+export const getLatestSalesService = async (busienss_id :string, page:number, limit:number) =>{
+  return await getLatestSalesModel(busienss_id, page, limit)
+}
+
+//  get sales description
+export const salesDescriptionService = async (salesId:string) =>{
+  return await salesDescription(salesId)
 }
