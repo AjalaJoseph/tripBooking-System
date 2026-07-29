@@ -13,7 +13,8 @@ import { registerBusinessOwnerController,
     forgotPasswordController,
     resetStaffPasswordController,
     resetBusinessOwnerPasswordController,
-    handleResendForgotPasswordOTP
+    handleResendForgotPasswordOTP,
+    handleDeActivateStaff
  } from "../controllers/authController"
  import { countSalesController } from "../controllers/salesController"
 import { validateBusinessAccountInput,
@@ -29,8 +30,8 @@ import { verifyRefreshToken } from "../middleware/verifyRefreshToken"
  import { checkSubscriptionActive, enforceStaffLimit } from "../middleware/subscription"
  import { authRateLimiter } from "../middleware/rateLimit"
 export const authRouter = Router()
-authRouter.post('/register-business', validateBusinessAccountInput, registerBusinessOwnerController)
-authRouter.post('/login-business', authRateLimiter, validateloginInput, handleBusinessLogin)
+authRouter.post("/register-business", validateBusinessAccountInput, registerBusinessOwnerController)
+authRouter.post("/login-business", authRateLimiter, validateloginInput, handleBusinessLogin)
 authRouter.post('/register-staff', verifyAccessToken, checkSubscriptionActive,enforceStaffLimit, validateStaffInput, staffRegistrationController)
 authRouter.post('/login-staff',authRateLimiter, validateStaffLoginInput,handleStaffLogin )
 authRouter.patch('/change-staff-password', verifyAccessToken, validateStaffPasswordInput,updateStaffPasswordController)
@@ -45,3 +46,4 @@ authRouter.post("/reset-password/staff", ValidateResetPasswordInput, resetStaffP
 authRouter.post("/reset-password/owner", ValidateResetPasswordInput, resetBusinessOwnerPasswordController)
 authRouter.post("/resend-otp", handleResendForgotPasswordOTP)
 authRouter.get("/subscription/usage", verifyAccessToken, checkSubscriptionActive, countSalesController)
+authRouter.patch("/:staffId/toggle-status", verifyAccessToken, handleDeActivateStaff)

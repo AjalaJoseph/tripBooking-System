@@ -9,7 +9,8 @@ import { registerBusinessOwner,
     editStaffProfile,
     deleteStaff,
     businessOwnerResetPassword,
-    staffResetPassword
+    staffResetPassword,
+    deActivateStaffModel
  } from "../models/userModel";
  import bcrypt from "bcrypt";
  import { logger } from '../config/logger';
@@ -182,6 +183,15 @@ export const editStaffProfileService = async (businessId:string, staff_id:any, u
     return await deleteStaff(staff_id)
  }
 
+//   deActivate staff service
+ export const deActivateStaffService = async (business_id:string, staff_id:any) =>{
+    const checkStaffExist = await checkStaff(staff_id, business_id)
+    if(!checkStaffExist){
+        throw Object.assign(new Error("Unauthorized: Staff profile not found or does not belong to your store directory."), {STATUS_CODES:404})
+    }
+    const nextStaffStatus = !checkStaffExist.isActive;
+    return await deActivateStaffModel(staff_id, business_id,nextStaffStatus)
+ }
 //   get staff account data
 export const staffProfile = async (email:string) =>{
     const data = await getStaffData(email)

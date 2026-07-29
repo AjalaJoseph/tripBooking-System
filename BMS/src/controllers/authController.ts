@@ -11,7 +11,8 @@ import { registerBusinessOwnerService,
     businessProfile,
     forgotPasswordService,
     resetStaffPasswordService,
-    resetBusinessOwnerPasswordService
+    resetBusinessOwnerPasswordService,
+    deActivateStaffService
  } from "../services/authService"
 
 import jwt from "jsonwebtoken";
@@ -239,6 +240,21 @@ export const handleDeleteStaff = async (req:Request, res:Response, next:NextFunc
     return res.status(200).json({
       status:"success",
       message:"staff deleted succesfully"
+    })
+  }catch(error){
+    return next(error)
+  }
+}
+
+// deactivateStaff controller
+export const handleDeActivateStaff = async (req:Request, res:Response, next:NextFunction) =>{
+  try{
+    const {id} = (req as any).user
+    const { staffId} = req.params
+    await deActivateStaffService(id, staffId)
+    return res.status(200).json({
+      status:"success",
+      message:"staff status update successful"
     })
   }catch(error){
     return next(error)

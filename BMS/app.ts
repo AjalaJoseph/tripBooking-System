@@ -16,7 +16,7 @@ const corsConfigurationOptions: CorsOptions = {
     ? "https://vercel.app" // Your live client website URL
     : "http://localhost:5173", 
    credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
   allowedHeaders: ["Content-Type", "Authorization", "idempotency-key", "x-paystack-signature"],
   exposedHeaders: ["x-paystack-signature"],
 };

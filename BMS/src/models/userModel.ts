@@ -183,7 +183,18 @@ export const deleteStaff = async (staff_id:string) =>{
         }
     })
 }
-
+// de activate staff
+export const deActivateStaffModel = async (staff_id:string, business_id:string, isActive:boolean) =>{
+    return await prisma.user.update({
+        where:{
+            id:staff_id,
+            businessId:business_id
+        },
+        data:{
+            isActive:isActive
+        }
+    })
+}
 //  forgot password for business owner
 export const businessOwnerResetPassword = async (email:string, password:string) =>{
     const reset = await prisma.business.update({
