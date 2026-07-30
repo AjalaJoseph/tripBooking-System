@@ -11,8 +11,8 @@ export const createBulkProductsService = async (businessId: string, productsArra
 };
 
 //  get all products service
-export const getAllProductsService = async (businessId:string,page:number, limit:number) =>{
-  const getProducts =await getAllProducts(businessId,page, limit)
+export const getAllProductsService = async (businessId:string,page:number, limit:number, searchQuery:string) =>{
+  const getProducts =await getAllProducts(businessId,page, limit, searchQuery)
   return getProducts
 }
 

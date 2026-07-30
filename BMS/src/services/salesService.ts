@@ -6,7 +6,9 @@ import { createSalesModel,
   getWeeklySalesOverviewModel,
   getPaymentMethodSplitsModel,
   salesDescription,
-  getLatestSalesModel
+  getLatestSalesModel,
+  countActiveTerminalModel,
+  getTopStaffRevenueModel
  } from "../models/salesModel";
 import { staffData } from "../models/userModel";
 import { countTenantSales } from "../models/midllewareMolde";
@@ -188,4 +190,18 @@ export const getLatestSalesService = async (busienss_id :string, page:number, li
 //  get sales description
 export const salesDescriptionService = async (salesId:string) =>{
   return await salesDescription(salesId)
+}
+
+//  count staff on terminal
+export const countActiveTerminalService = async (businessId:string) =>{
+  const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    return await countActiveTerminalModel(businessId, todayStart)
+}
+
+//  get top staff that generate high revenue
+export const getTopStaffRevenueService = async (businessId:string) =>{
+  const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    return await getTopStaffRevenueModel(businessId, todayStart)
 }

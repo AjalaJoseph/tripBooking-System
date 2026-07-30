@@ -10,7 +10,9 @@ import { handlePOSCheckout,
     getWeeklySalesOverview, 
     paymentMethodSplitController,
     getLatestSalesController,
-    handleSalesDecription
+    handleSalesDecription,
+    getDailyTerminalStaffCount,
+    getTopStaffRevenueController
 } from "../controllers/salesController"
 import { enforceIdempotencyKeyGate } from "../middleware/idempotency"
 export const saleRouter = Router()
@@ -23,3 +25,5 @@ saleRouter.get("/weekly-overview", verifyAccessToken, getWeeklySalesOverview)
 saleRouter.get("/payment-splits", verifyAccessToken, paymentMethodSplitController)
 saleRouter.get("/latest-sales", verifyAccessToken, getLatestSalesController);
 saleRouter.get("/:salesId/sales-description", verifyAccessToken, handleSalesDecription);
+saleRouter.get("/active-terminal", verifyAccessToken, getDailyTerminalStaffCount)
+saleRouter.get("/staff-leaderboard", verifyAccessToken, getTopStaffRevenueController)

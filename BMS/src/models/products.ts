@@ -17,41 +17,54 @@ export const insertBulkProductsModel = async (businessId: string, productsList: 
 };
 
 //  get all product model
-export const getAllProducts = async (businessId:string, page:number=1, limit:number=20) =>{
-  const skip = (page - 1)*limit
-  const totalProducts = await prisma.product.count({
-    where:{
-      businessId:businessId
-    }
-  })
-  const totalPages = Math.ceil(totalProducts/limit)
-  const allProducts = await prisma.product.findMany({
-    where:{
-      businessId:businessId
-    },
-    select:{
-      id:true,
-      product_name:true,
-      sellingPrice:true,
-      stockCount:true,
+export const getAllProducts = async (businessId: string, page: number = 1, limit: number = 10, searchQuery: string) => {
+  const skip = (page - 1) * limit;
+  
+  const whereConditions: any = {
+    businessId: businessId, // Multi-tenant safety isolation boundary
+  };
 
-    },
-    skip: skip,
-    take:limit,
-    orderBy:{createdAt:"desc"}
-  })
-  return {
-    allProducts,
-    pagination: {
-            totalProducts: totalProducts,
-            totalPages: totalPages,
-            currentPage: page,
-            limit: limit,
-            hasNextPage: page < totalPages,
-            hasPreviousPage: page > 1
-        }
+  // 1. 🔥 THE FIX: Apply the search filter query conditions FIRST before any counts are computed
+  if (searchQuery && searchQuery.trim() !== "") {
+    whereConditions.product_name = {
+      contains: searchQuery.trim(),
+      mode: 'insensitive', // Matches casing anomalies seamlessly
+    };
   }
-}
+
+  // 2. 🔥 ACCURACY FIX: Run both operations concurrently to get correct search metrics
+  const [allProducts, totalProducts] = await prisma.$transaction([
+    prisma.product.findMany({
+      where: whereConditions,
+      select: {
+        id: true,
+        product_name:true,
+        stockCount:true,
+        sellingPrice:true
+      },
+      skip: skip,
+      take: limit,
+      orderBy: { createdAt: "desc" }
+    }),
+    prisma.product.count({
+      where: whereConditions // Counts ONLY the items matching your active search string filters!
+    })
+  ]);
+
+  const totalPages = Math.ceil(totalProducts / limit);
+
+  return {
+   allProducts,
+    pagination: {
+      totalProducts: totalProducts,
+      totalPages: totalPages,
+      currentPage: page,
+      limit: limit,
+      hasNextPage: page < totalPages,
+      hasPrevPage: page > 1
+    }
+  };
+};
 
 //  check if product exist
 export const checkProduct = async (businessId:string, productId:string)=>{

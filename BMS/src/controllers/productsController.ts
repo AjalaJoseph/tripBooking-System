@@ -29,8 +29,9 @@ export const handleGetProductsController = async (req:Request, res:Response, nex
         const pageStr = req.query.page as string;
         const page = Math.max(1, parseInt(pageStr) || 1);
         const limitStr = req.query.limit as string;
-        const limit = Math.max(1, parseInt(limitStr) || 20);
-        const getProducts = await getAllProductsService(id, page, limit)
+        const limit = Math.max(1, parseInt(limitStr) || 10);
+         const search = req.query.search as string || " "
+        const getProducts = await getAllProductsService(id, page, limit,search)
          res.status(200).json({
             status: "success",
             results: getProducts.allProducts.length,

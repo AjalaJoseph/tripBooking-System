@@ -357,3 +357,60 @@ export const salesDescription = async (saleId: string,) =>{
     }
   })
 }
+
+//  staff terminal count 
+
+export const countActiveTerminalModel = async (businessId:string, todayStart:Date)=>{
+   const aggregationResult = await prisma.sale.findMany({
+      where: {
+        businessId: businessId,
+        createdAt: {
+          gte: todayStart 
+        }
+      },
+      distinct: ['userId'],
+      select: {
+        userId: true 
+      }
+    });
+
+   return {
+      activeTerminalStaffCount: aggregationResult.length
+    };
+}
+
+// leaderBoard model
+export const getTopStaffRevenueModel = async (businessId:string, todayStart:Date) =>{
+  const leaderboard = await prisma.sale.groupBy({
+      by: ['userId', 'recorded_by'],
+      where: {
+        businessId: businessId,
+        createdAt: {
+          gte: todayStart // Filters records created since 12:00 AM today morning
+        }
+      },
+      _sum: {
+        total_amount: true // Calculate total gross sales amount per operator [S4]
+      },
+      orderBy: {
+        _sum: {
+          total_amount: 'desc' // Sort highest revenue earners directly to index position 0
+        }
+      },
+      take: 1 // We only need the #1 top performer to keep data lightweight
+    });
+
+    // 3. 🛡️ SAFE FALLBACK EXTRACTION
+    // If no sales have occurred today, default gracefully to prevent layout crashes
+    if (leaderboard.length === 0) {
+      return {
+        topOperatorName: "No Sales Today",
+        revenueGenerated: 0
+      };
+    }
+
+    return {
+      topOperatorName: leaderboard[0].recorded_by,
+      revenueGenerated: Number(leaderboard[0]._sum.total_amount) || 0
+    };
+}

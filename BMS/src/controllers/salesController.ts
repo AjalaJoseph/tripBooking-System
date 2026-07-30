@@ -7,7 +7,9 @@ import { createSalesService,
   getWeeklySalesOverviewService,
   paymentMethodSplitService,
   getLatestSalesService,
-  salesDescriptionService
+  salesDescriptionService,
+  countActiveTerminalService,
+  getTopStaffRevenueService
  } from "../services/salesService.js";
  import { countTenantSales } from "../models/midllewareMolde.js";
 export const handlePOSCheckout = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
@@ -293,6 +295,56 @@ export const handleSalesDecription = async (req: Request, res: Response, next: N
     });
 
   } catch (error) {
+    return next(error);
+  }
+};
+
+
+export const getDailyTerminalStaffCount = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id, role } = (req as any).user; // Read identity details from token validation middleware
+
+    // 🛡️ ROLE SECURITY GUARD: Prevents basic operators from checking active shift headcounts
+    if (role?.toUpperCase() !== "OWNER") {
+      return res.status(403).json({
+        status: "fail",
+        message: "Unauthorized: Access denied. This endpoint is strictly reserved for business owners."
+      });
+    }
+
+    const analytics = await countActiveTerminalService(id);
+
+    return res.status(200).json({
+      status: "success",
+      data: analytics
+    });
+
+  } catch (error: any) {
+    return next(error);
+  }
+};
+
+//  revenue leaderboard 
+export const getTopStaffRevenueController = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id, role } = (req as any).user; // The active owner's credentials from token middleware
+
+    // 🛡️ ROLE SECURITY GUARD
+    if (role?.toUpperCase() !== "OWNER") {
+      return res.status(403).json({
+        status: "fail",
+        message: "Unauthorized: Access denied. This endpoint is strictly reserved for business owners."
+      });
+    }
+
+    const topPerformer = await getTopStaffRevenueService(id);
+
+    return res.status(200).json({
+      status: "success",
+      data: topPerformer
+    });
+
+  } catch (error: any) {
     return next(error);
   }
 };
