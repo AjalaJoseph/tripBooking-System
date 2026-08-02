@@ -10,10 +10,6 @@ import { getActiveSubscription } from "../models/midllewareMolde.js";
 export const handleGetDynamicReportDashboard = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { id, role } = (req as any).user;
-    
-    // Read the custom timeline checkpoint sent by your client frontend interface
-    const startDateQuery = req.query.startDate as string;
-
     // 1. Executive Security Clearance Filter: Block low-tier cashiers
     if (role !== "OWNER") {
       res.status(403).json({
@@ -22,17 +18,19 @@ export const handleGetDynamicReportDashboard = async (req: Request, res: Respons
       });
       return; // Halts the function instantly without violating strict Promise<void> type constraints
     }
-
-    if (!startDateQuery) {
+    //  const { startDate, endDate } = (req.query as string);
+     const startDate = req.query.startDate as string
+     const endDate = req.query.endDate as string
+    if (!startDate || !endDate) {
       res.status(400).json({
         status: "fail",
-        message: "Bad Request: A valid 'startDate' query parameter (ISO string format) must be supplied by the frontend."
+        message: "Validation Error: Missing required date window parameter (ISO format) limits (startDate/endDate)."
       });
       return;
     }
 
     // 2. Trigger your dynamic service pass-through pipeline
-    const compiledReport = await generateReportService(id, startDateQuery);
+    const compiledReport = await generateReportService(id, startDate, endDate);
 
    res.status(200).json({
       status: "success",
@@ -50,8 +48,6 @@ export const handleGetDynamicReportDashboard = async (req: Request, res: Respons
 export const handleDownloadReportCSV = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { id, role } = (req as any).user;
-    const startDateQuery = req.query.startDate as string;
-
     // 1. 🛡️ Executive Security Gate: Reject low-tier cashiers
     if (role !== "OWNER") {
       res.status(403).json({
@@ -61,10 +57,12 @@ export const handleDownloadReportCSV = async (req: Request, res: Response, next:
       return;
     }
 
-    if (!startDateQuery) {
+     const startDate = req.query.startDate as string
+     const endDate = req.query.endDate as string
+    if (!startDate || !endDate) {
       res.status(400).json({
         status: "fail",
-        message: "Bad Request: A valid 'startDate' query parameter (ISO string format) must be supplied by the frontend."
+        message: "Validation Error: Missing required date window parameter (ISO format) limits (startDate/endDate)."
       });
       return;
     }
@@ -82,7 +80,8 @@ export const handleDownloadReportCSV = async (req: Request, res: Response, next:
     // 🚀 THE NON-BLOCKING WIN: Drop the heavy parameters payload straight into Redis background queue
     const reportgeneratingPayload ={
       businessId:id,
-      startDateQuery:startDateQuery,
+      startDateQuery:startDate,
+      endDateQuery:endDate,
       jobId:uniqueJobTicketId
     }
     await otherQueue.add("compile-cvs-report-statement", reportgeneratingPayload);
@@ -103,10 +102,10 @@ export const handleDownloadReportCSV = async (req: Request, res: Response, next:
 export const handleGetCvsReportStatus = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { jobId } = req.params;
-    
+    console.log(jobId)
     // Query your fast Redis RAM cache layer for this job ticket
     const cacheData = await redis.get(`report:status:${jobId}`);
-
+    
     // If the background worker hasn't finished writing the file yet, the key will be null
     if (!cacheData) {
       res.status(200).json({
@@ -115,7 +114,7 @@ export const handleGetCvsReportStatus = async (req: Request, res: Response, next
       });
       return;
     }
-
+    console.log(cacheData)
     const parsedStatusReport = JSON.parse(cacheData);
 
     // If completed, return the download retrieval URL channel path directly to the frontend interface
@@ -157,8 +156,6 @@ export const handleRetrieveFinishedReportCSV = async (req: Request, res: Respons
 export const handleDownloadReportPDF = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { id, role } = (req as any).user;
-    const startDateQuery = req.query.startDate as string;
-
     // 1. 🛡️ Executive Security Clearance Gate
     if (role !== "OWNER") {
       res.status(403).json({
@@ -168,10 +165,12 @@ export const handleDownloadReportPDF = async (req: Request, res: Response, next:
       return;
     }
 
-    if (!startDateQuery) {
+    const startDate = req.query.startDate as string
+     const endDate = req.query.endDate as string
+    if (!startDate || !endDate) {
       res.status(400).json({
         status: "fail",
-        message: "Bad Request: A valid 'startDate' query parameter must be supplied by the frontend."
+        message: "Validation Error: Missing required date window parameter (ISO format) limits (startDate/endDate)."
       });
       return;
     }
@@ -190,7 +189,8 @@ export const handleDownloadReportPDF = async (req: Request, res: Response, next:
     // 🚀 THE NON-BLOCKING WIN: Drop the heavy parameters payload straight into Redis background queue
     const reportgeneratingPayload ={
       businessId:id,
-      startDateQuery:startDateQuery,
+      startDateQuery:startDate,
+      endDateQuery:endDate,
       jobId:uniqueJobTicketId
     }
     await otherQueue.add("compile-pdf-report-statement", reportgeneratingPayload);
@@ -245,7 +245,7 @@ export const handleGetReportStatus = async (req: Request, res: Response, next: N
 export const handleRetrieveFinishedReportPDF = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { jobId } = req.params;
-    const targetFilePath = path.resolve(`./storage/BizFlow_Report_${jobId}.pdf`);
+    const targetFilePath = path.resolve(`./storage/Baazio_Report_${jobId}.pdf`);
 
     if (!fs.existsSync(targetFilePath)) {
       res.status(404).json({
@@ -257,7 +257,7 @@ export const handleRetrieveFinishedReportPDF = async (req: Request, res: Respons
 
     // 🖨️ Set professional networking attachment streaming headers
     res.setHeader("Content-Type", "application/pdf");
-    res.setHeader("Content-Disposition", `attachment; filename="BizFlow_Statement_${jobId}.pdf"`);
+    res.setHeader("Content-Disposition", `attachment; filename="Baazio_Statement_${jobId}.pdf"`);
 
     // Stream the binary bits directly from your server hard drive to the client browser
     const fileStream = fs.createReadStream(targetFilePath);

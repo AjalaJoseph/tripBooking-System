@@ -184,14 +184,17 @@ export const fetchTopSellingProductsModel = async (businessId: string, limit: nu
 };
 
 //  Report generating model
-export const fetchBusinessReportModel = async (businessId: string, startDate: Date) => {
+export const fetchBusinessReportModel = async (businessId: string, startDate: Date, endDate:Date) => {
   return await prisma.$transaction(async (tx) => {
     
     // Pillar 1: Aggregate Traffic, Volume, and Basket Size Averages
     const volumeMetrics = await tx.sale.aggregate({
       where: {
         businessId: businessId,
-        createdAt: { gte: startDate }
+        createdAt: { 
+          gte: startDate,
+          lte:endDate
+         }
       },
       _sum: { total_amount: true },
       _count: { id: true },
@@ -203,7 +206,10 @@ export const fetchBusinessReportModel = async (businessId: string, startDate: Da
       by: ['payment_method'],
       where: {
         businessId: businessId,
-        createdAt: { gte: startDate }
+        createdAt: { 
+          gte: startDate,
+          lte:endDate
+         }
       },
       _sum: { total_amount: true }
     });
@@ -214,7 +220,10 @@ export const fetchBusinessReportModel = async (businessId: string, startDate: Da
       where: {
         sale: {
           businessId: businessId, // Relational tenant fence join
-          createdAt: { gte: startDate }
+          createdAt: { 
+            gte: startDate,
+            lte:endDate
+           }
         }
       },
       _sum: {

@@ -1,14 +1,15 @@
 import { fetchBusinessReportModel } from "../models/salesModel";
-export const generateReportService = async (businessId: string, startDate:string) => {
+export const generateReportService = async (businessId: string, startDate:string, endDate:string) => {
   const now = new Date();
   // Convert the incoming frontend text string into a real JavaScript Date object
   const parsedStartDate = new Date(startDate);
+  const parseEndDate = new Date(endDate)
   // Fall-safe check: If frontend sends a corrupt date string, default gracefully to past 7 days
-  if (isNaN(parsedStartDate.getTime())) {
-    parsedStartDate.setDate(now.getDate() - 7);
-  }
+  // if (isNaN(parsedStartDate.getTime())) {
+  //   parsedStartDate.setDate(now.getDate() - 7);
+  // }
   // 1. Trigger the single, combined database execution block
-  const rawReportData = await fetchBusinessReportModel(businessId, parsedStartDate);
+  const rawReportData = await fetchBusinessReportModel(businessId, parsedStartDate, parseEndDate);
   // 2. Map and parse payment channels dynamically with clean fallbacks to 0
   let cardIncome = 0;
   let transferIncome = 0;
@@ -39,7 +40,7 @@ export const generateReportService = async (businessId: string, startDate:string
     generated_at: now,
     timeline: {
       from: parsedStartDate,
-      to: now
+      to: parseEndDate
     },
     // 💡 NEW METADATA KEY ENHANCEMENTS ADDED HERE!
     business_context: {

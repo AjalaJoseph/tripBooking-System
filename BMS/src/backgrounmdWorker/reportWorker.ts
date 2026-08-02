@@ -7,14 +7,15 @@ export const reportWorker = new Worker("general-queue", async (job: Job) => {
     const currentAttempt = job.attemptsMade + 1;
         
     if (job.name === 'compile-pdf-report-statement') {
-      logger.info(`🔨 [BizFlow Queue]: Processing generate report job [${job.id}] (Attempt #${currentAttempt})`);
+      logger.info(`🔨 [Baazio Queue]: Processing generate report job [${job.id}] (Attempt #${currentAttempt})`);
       
       // 💡 THE ULTIMATE FIX: Pull parameters out of job.data instead of job root!
-      const { businessId, startDateQuery, jobId } = job.data;
+      const { businessId, startDateQuery,endDateQuery, jobId } = job.data;
 
       const formattedJobData = {
         business_id: businessId,      // Maps perfectly to what reportJob expects
         startDate:   startDateQuery,
+        endDate : endDateQuery,
         jobId:       jobId
       };
 
@@ -23,14 +24,15 @@ export const reportWorker = new Worker("general-queue", async (job: Job) => {
     }
     //  cvs report download worker
      if (job.name === 'compile-cvs-report-statement') {
-      logger.info(`🔨 [BizFlow Queue]: Processing generate report job [${job.id}] (Attempt #${currentAttempt})`);
+      logger.info(`🔨 [Baazio Queue]: Processing generate report job [${job.id}] (Attempt #${currentAttempt})`);
       
       // 💡 THE ULTIMATE FIX: Pull parameters out of job.data instead of job root!
-      const { businessId, startDateQuery, jobId } = job.data;
+      const { businessId, startDateQuery, endDateQuery, jobId } = job.data;
 
       const formattedJobData = {
         business_id: businessId,      // Maps perfectly to what reportJob expects
         startDate:   startDateQuery,
+        endDate: endDateQuery,
         jobId:       jobId
       };
 

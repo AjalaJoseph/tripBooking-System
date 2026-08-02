@@ -7,18 +7,20 @@ import { fileURLToPath } from "url";
 export const reportJob = async (data:any) =>{
     let business_id = ""
     let startDate =""
+    let endDate =""
     if(data){
         business_id = data.business_id
         startDate = data.startDate
+        endDate = data.endDateQuery
     }
-    const report = await generateReportService(business_id, startDate)
+    const report = await generateReportService(business_id, startDate, endDate)
 
       const storageDirectory = path.resolve("./storage");
 
   // If the physical directory doesn't exist on your Windows hard drive, create it automatically!
     if (!fs.existsSync(storageDirectory)) {
         fs.mkdirSync(storageDirectory, { recursive: true });
-        console.log(`📁 [BizFlow Storage]: Created missing parent folder array directory at ${storageDirectory}`);
+        console.log(`📁 [Baazio Storage]: Created missing parent folder array directory at ${storageDirectory}`);
     }
 
   // 2. Define your clean dynamic filename handle path safely
@@ -36,7 +38,7 @@ export const reportJob = async (data:any) =>{
         // =========================================================
         // 📄 SECTION 1: MASTER LETTERHEAD
         // =========================================================
-        doc.fillColor("#000000").font(FONT_BOLD).fontSize(20).text("BIZFLOW MANAGEMENT SYSTEM", {align:"center"});
+        doc.fillColor("#000000").font(FONT_BOLD).fontSize(20).text("BAAZIO MANAGEMENT SYSTEM", {align:"center"});
         doc.font(FONT_REG).fontSize(10).fillColor("#555555").text("EXECUTIVE PERFORMANCE & FINANCIAL STATEMENT", {align:"center"});
         
         // Minimalist Top Double Rule Separator
@@ -180,11 +182,13 @@ export const reportJob = async (data:any) =>{
 export const cvsReportJob = async (data: any) => {
   let business_id = "";
   let startDate = "";
+  let endDate = ""
   let jobId = "";
 
   if (data) {
     business_id = data.business_id;
     startDate = data.startDate;
+    endDate = data.endDate
     jobId = data.jobId; // Capture the unique tracking ticket ID
   }
 
@@ -192,17 +196,17 @@ export const cvsReportJob = async (data: any) => {
   const storageDirectory = path.resolve("./storage");
   if (!fs.existsSync(storageDirectory)) {
     fs.mkdirSync(storageDirectory, { recursive: true });
-    console.log(`📁 [BizFlow Storage]: Created missing parent folder array directory at ${storageDirectory}`);
+    console.log(`📁 [Baazio Storage]: Created missing parent folder array directory at ${storageDirectory}`);
   }
 
   // Fetch the live dynamic 3-Pillar report snapshot layout payload
-  const report = await generateReportService(business_id, startDate);
+  const report = await generateReportService(business_id, startDate,endDate);
 
   // 2. 📊 BUILD THE PROFESSIONAL CSV TEXT BLOCK STRING
   let csvContent = "";
 
   // Header Meta Section
-  csvContent += `BIZFLOW BUSINESS PERFORMANCE SUMMARY REPORT\n`;
+  csvContent += `Baazio BUSINESS PERFORMANCE SUMMARY REPORT\n`;
   csvContent += `Generated At,${report.generated_at.toISOString()}\n`;
   csvContent += `Timeline Window,From ${startDate} to ${new Date().toISOString().split('T')[0]}\n\n`;
 
