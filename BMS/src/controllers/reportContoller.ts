@@ -90,7 +90,7 @@ export const handleDownloadReportCSV = async (req: Request, res: Response, next:
       status: "processing",
       message: "Your executive spreadsheet summary task has been queued successfully.",
       jobId: uniqueJobTicketId,
-      checkStatusUrl: `/api/v1/sales/report-status/${uniqueJobTicketId}`
+      checkStatusUrl: `/api/report-download-status/${uniqueJobTicketId}/csv`
     });
 
   } catch (error) {
@@ -102,10 +102,10 @@ export const handleDownloadReportCSV = async (req: Request, res: Response, next:
 export const handleGetCvsReportStatus = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { jobId } = req.params;
-    console.log(jobId)
+    // console.log(jobId)
     // Query your fast Redis RAM cache layer for this job ticket
-    const cacheData = await redis.get(`report:status:${jobId}`);
-    
+    const cacheData = await redis.get(`csv:report:status:${jobId}`);
+    // console.log(cacheData)
     // If the background worker hasn't finished writing the file yet, the key will be null
     if (!cacheData) {
       res.status(200).json({
@@ -135,7 +135,7 @@ export const handleGetCvsReportStatus = async (req: Request, res: Response, next
 export const handleRetrieveFinishedReportCSV = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { jobId } = req.params;
-    const targetFilePath = path.resolve(`./storage/BizFlow_Report_${jobId}.csv`);
+    const targetFilePath = path.resolve(`./storage/Baazio_Report_${jobId}.csv`);
 
     if (!fs.existsSync(targetFilePath)) {
       res.status(404).json({ status: "fail", message: "The compiled spreadsheet file was not located on storage arrays." });
@@ -187,12 +187,12 @@ export const handleDownloadReportPDF = async (req: Request, res: Response, next:
      const uniqueJobTicketId = crypto.randomUUID();
 
     // 🚀 THE NON-BLOCKING WIN: Drop the heavy parameters payload straight into Redis background queue
-    const reportgeneratingPayload ={
-      businessId:id,
-      startDateQuery:startDate,
-      endDateQuery:endDate,
-      jobId:uniqueJobTicketId
-    }
+    const reportgeneratingPayload = {
+        businessId: id,
+        startDateQuery: startDate,
+        endDateQuery: endDate, // 🎯 SAVED AS 'endDateQuery'
+        jobId: uniqueJobTicketId
+}
     await otherQueue.add("compile-pdf-report-statement", reportgeneratingPayload);
 
     // Respond back to the frontend dashboard instantly so user interface loaders can fire up smoothly
@@ -200,7 +200,7 @@ export const handleDownloadReportPDF = async (req: Request, res: Response, next:
       status: "processing",
       message: "Your executive financial statement compilation task has been queued successfully.",
       jobId: uniqueJobTicketId,
-      checkStatusUrl: `/api/sales/report-download-status/${uniqueJobTicketId}`
+      checkStatusUrl: `/api/report-download-status/${uniqueJobTicketId}/pdf`
     });
     
   } catch (error) {
@@ -212,11 +212,9 @@ export const handleDownloadReportPDF = async (req: Request, res: Response, next:
 export const handleGetReportStatus = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { jobId } = req.params;
-    
     // Query your fast Redis RAM cache layer for this job ticket
     const cacheData = await redis.get(`pdf:report:status:${jobId}`);
-
-    // If the background worker hasn't finished writing the file yet, the key will be null
+    
     if (!cacheData) {
       res.status(200).json({
         status: "processing",
@@ -224,7 +222,7 @@ export const handleGetReportStatus = async (req: Request, res: Response, next: N
       });
       return;
     }
-
+    console.log(cacheData)
     const parsedStatusReport = JSON.parse(cacheData);
 
     // If completed, return the download retrieval URL channel path directly to the frontend interface

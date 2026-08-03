@@ -1,4 +1,4 @@
-import { reportJob, cvsReportJob } from "../backgroundJobs/reportPdfJob";
+import { reportJob, csvReportJob } from "../backgroundJobs/reportPdfJob";
 import { Worker, Job } from "bullmq";
 import { redis } from "../config/redis";
 import { logger } from "../config/logger";
@@ -9,16 +9,15 @@ export const reportWorker = new Worker("general-queue", async (job: Job) => {
     if (job.name === 'compile-pdf-report-statement') {
       logger.info(`🔨 [Baazio Queue]: Processing generate report job [${job.id}] (Attempt #${currentAttempt})`);
       
-      // 💡 THE ULTIMATE FIX: Pull parameters out of job.data instead of job root!
-      const { businessId, startDateQuery,endDateQuery, jobId } = job.data;
-
+      // 💡 THE ULTIMATE FIX: Pull parameters out of job.data instead of job root
+      
+      const { startDateQuery, endDateQuery, businessId, jobId } = job.data; 
       const formattedJobData = {
         business_id: businessId,      // Maps perfectly to what reportJob expects
         startDate:   startDateQuery,
-        endDate : endDateQuery,
+        endDate: endDateQuery,
         jobId:       jobId
       };
-
       // Execute your high-speed consolidated Times-Roman PDF draw script pipeline
       await reportJob(formattedJobData);
     }
@@ -37,7 +36,7 @@ export const reportWorker = new Worker("general-queue", async (job: Job) => {
       };
 
       // Execute your high-speed consolidated Times-Roman PDF draw script pipeline
-      await cvsReportJob(formattedJobData);
+      await csvReportJob(formattedJobData);
     }
   } catch (error) {
     logger.error(`❌ Error when generating report threw an internal error inside job [${job.id}]: ${error}`);

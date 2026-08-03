@@ -12,7 +12,7 @@ import { handleDownloadReportCSV,
 export const reportRouter = Router()
 reportRouter.get("/generate-report", verifyAccessToken, checkSubscriptionActive, handleGetDynamicReportDashboard)
 reportRouter.get("/download-report/csv", verifyAccessToken,  handleDownloadReportCSV)
-reportRouter.get("/download-report/pdf", verifyAccessToken,  handleDownloadReportPDF)
+reportRouter.get("/download-report/pdf",  verifyAccessToken,  handleDownloadReportPDF)
 reportRouter.get("/report-download-status/:jobId/pdf",verifyAccessToken, handleGetReportStatus )
 reportRouter.get("/report-download-status/:jobId/csv",verifyAccessToken, handleGetCvsReportStatus )
 reportRouter.get("/download-report/:jobId/pdf", verifyAccessToken,handleRetrieveFinishedReportPDF)

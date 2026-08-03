@@ -11,7 +11,7 @@ export const reportJob = async (data:any) =>{
     if(data){
         business_id = data.business_id
         startDate = data.startDate
-        endDate = data.endDateQuery
+        endDate = data.endDate
     }
     const report = await generateReportService(business_id, startDate, endDate)
 
@@ -24,7 +24,7 @@ export const reportJob = async (data:any) =>{
     }
 
   // 2. Define your clean dynamic filename handle path safely
-        const outputFilePath = path.join(storageDirectory, `BizFlow_Report_${data.jobId}.pdf`);
+        const outputFilePath = path.join(storageDirectory, `Baazio_Report_${data.jobId}.pdf`);
         const writeStream = fs.createWriteStream(outputFilePath);
         // 4. 🖨️ INITIALIZE PDFKIT DOCUMENT INSTANCE IN SERVER RAM
         const doc = new PDFDocument({ margin: 54, size: "A4" });
@@ -154,7 +154,7 @@ export const reportJob = async (data:any) =>{
         // 🖨️ SECTION 3: COMPLIANCE FOOTER
         // =========================================================
         doc.font(FONT_REG).fontSize(8).fillColor("#777777");
-        doc.text("CONFIDENTIAL STATISTICAL STATEMENT - PROCESSED AUTOMATICALLY VIA BIZFLOW MULTI-TENANT ENGINE.", 54, 755, { align: "center" });
+        doc.text("CONFIDENTIAL STATISTICAL STATEMENT - PROCESSED AUTOMATICALLY VIA BAAZIO MULTI-TENANT ENGINE.", 54, 755, { align: "center" });
     
         // Seal the data stream pipeline
         doc.end();
@@ -164,12 +164,12 @@ export const reportJob = async (data:any) =>{
     // 💡 THE STATUS SYNC FIX: Cache the compilation success flag right into Redis!
     const cacheDataPayload = {
       status: "COMPLETED",
-      fileUrl: `/api/sales/download-report/${data.jobId}.pdf` // Direct path to fetch the binary bits later
+      fileUrl: `/api/download-report/${data.jobId}/pdf` // Direct path to fetch the binary bits later
     };
     
     // Store in Redis RAM with a 24-hour expiration safety TTL window
     await redis.set(`pdf:report:status:${data.jobId}`, JSON.stringify(cacheDataPayload), "EX", 24 * 60 * 60);
-    console.log(`✅ [BizFlow Workers]: Job [${data.jobId}] completely written to disk and cached in Redis RAM.`);
+    console.log(`✅ [Baazio Workers]: Job [${data.jobId}] completely written to disk and cached in Redis RAM.`);
     resolve();
   });
 
@@ -179,7 +179,7 @@ export const reportJob = async (data:any) =>{
 }
 
 //  cvs report file background job
-export const cvsReportJob = async (data: any) => {
+export const csvReportJob = async (data: any) => {
   let business_id = "";
   let startDate = "";
   let endDate = ""
@@ -192,6 +192,7 @@ export const cvsReportJob = async (data: any) => {
     jobId = data.jobId; // Capture the unique tracking ticket ID
   }
 
+    
   // 1. 📁 SELF-HEALING DIRECTORY GUARD
   const storageDirectory = path.resolve("./storage");
   if (!fs.existsSync(storageDirectory)) {
@@ -200,7 +201,7 @@ export const cvsReportJob = async (data: any) => {
   }
 
   // Fetch the live dynamic 3-Pillar report snapshot layout payload
-  const report = await generateReportService(business_id, startDate,endDate);
+  const report = await generateReportService(business_id, startDate, endDate);
 
   // 2. 📊 BUILD THE PROFESSIONAL CSV TEXT BLOCK STRING
   let csvContent = "";
@@ -239,15 +240,15 @@ export const cvsReportJob = async (data: any) => {
   }
 
   // 3. 📝 WRITE COMPLETE DATA TO STORAGE DISK
-  const outputFilePath = path.join(storageDirectory, `BizFlow_Report_${jobId}.csv`);
+  const outputFilePath = path.join(storageDirectory, `Baazio_Report_${jobId}.csv`);
   await fs.promises.writeFile(outputFilePath, csvContent, "utf8");
 
   // 4. ⚡ CACHE SUCCESS MARKERS IN REDIS RAM FOR THE POLLING CONTROLLER
   const cacheDataPayload = {
     status: "COMPLETED",
-    fileUrl: `/api/sales/download-report/${jobId}.cvs` // Pass file types cleanly down parameters
+    fileUrl: `/api/download-report/${jobId}.csv` // Pass file types cleanly down parameters
   };
   
-  await redis.set(`cvs:report:status:${jobId}`, JSON.stringify(cacheDataPayload), "EX", 24 * 60 * 60);
-  console.log(`✅ [BizFlow Workers]: CSV Spreadsheet [${jobId}] completely written to disk and cached in Redis.`);
+  await redis.set(`csv:report:status:${jobId}`, JSON.stringify(cacheDataPayload), "EX", 24 * 60 * 60);
+  console.log(`✅ [Baazio Workers]: CSV Spreadsheet [${jobId}] completely written to disk and cached in Redis.`);
 };

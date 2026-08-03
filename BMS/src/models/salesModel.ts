@@ -186,7 +186,7 @@ export const fetchTopSellingProductsModel = async (businessId: string, limit: nu
 //  Report generating model
 export const fetchBusinessReportModel = async (businessId: string, startDate: Date, endDate:Date) => {
   return await prisma.$transaction(async (tx) => {
-    
+    console.log(endDate)
     // Pillar 1: Aggregate Traffic, Volume, and Basket Size Averages
     const volumeMetrics = await tx.sale.aggregate({
       where: {
