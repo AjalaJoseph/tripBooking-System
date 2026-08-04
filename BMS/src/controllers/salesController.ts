@@ -181,6 +181,7 @@ export const countSalesController = async (req: Request, res: Response, next: Ne
     }
 
     let currentSalesCount = 0;
+    const planExpire = activeSub.expired_at
     const planName = activeSub.plan.plan_name?.toUpperCase();
 
     // 2. CONDITIONAL QUOTA TRIGGER: Track sales count bounds for capped tiers
@@ -199,7 +200,8 @@ export const countSalesController = async (req: Request, res: Response, next: Ne
       data: {
         plan: planName,
         salesUsedThisMonth: currentSalesCount,
-        salesLimitAllowed: planName === "FREE_TRIAL" ? 300 : planName === "BASIC_PLAN" ? 2000 : "UNLIMITED"
+        salesLimitAllowed: planName === "FREE_TRIAL" ? 300 : planName === "BASIC_PLAN" ? 2000 : "UNLIMITED",
+        plan_expire:planExpire
       }
     });
 

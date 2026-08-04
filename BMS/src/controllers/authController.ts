@@ -127,7 +127,7 @@ export const logoutController = async (req: Request, res: Response, next: NextFu
     const accessToken = authHeader && authHeader.split(' ')[1]; 
 
     const tokenExp = (req as any).user.exp;
-    console.log(tokenExp)
+    //  console.log(tokenExp)
     // 1. 🛡️ BLACKLIST ACCESS TOKEN IN FAST RAM CACHE LAYER
     if (accessToken && tokenExp) {
       const currentTime = Math.floor(Date.now() / 1000);
