@@ -11,7 +11,7 @@ import { registerBusinessOwnerController,
     logoutController,
     refreshTokenController,
     forgotPasswordController,
-    resetStaffPasswordController,
+    resetPasswordController,
     resetBusinessOwnerPasswordController,
     handleResendForgotPasswordOTP,
     handleDeActivateStaff
@@ -42,7 +42,7 @@ authRouter.get("/me",verifyAccessToken, handleGetDynamicProfileData)
 authRouter.post("/logout", verifyAccessToken, logoutController)
 authRouter.post("/refresh-token", verifyRefreshToken, refreshTokenController)
 authRouter.post("/forgot-password",authRateLimiter, ValidateForgotPasswordEmail, forgotPasswordController)
-authRouter.post("/reset-password/staff", ValidateResetPasswordInput, resetStaffPasswordController)
+authRouter.post("/reset-password", ValidateResetPasswordInput, resetPasswordController)
 authRouter.post("/reset-password/owner", ValidateResetPasswordInput, resetBusinessOwnerPasswordController)
 authRouter.post("/resend-otp", handleResendForgotPasswordOTP)
 authRouter.get("/subscription/usage", verifyAccessToken, checkSubscriptionActive, countSalesController)

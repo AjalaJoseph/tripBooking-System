@@ -10,7 +10,7 @@ import { registerBusinessOwnerService,
     staffProfile,
     businessProfile,
     forgotPasswordService,
-    resetStaffPasswordService,
+    resetPasswordService,
     resetBusinessOwnerPasswordService,
     deActivateStaffService
  } from "../services/authService"
@@ -143,7 +143,6 @@ export const logoutController = async (req: Request, res: Response, next: NextFu
 
     // 2. 🧹 PURGE ALL REFRESH TOKEN ROW SLOTS
     const keys = await redis.keys(`refresh:${id}`);
-    console.log(keys)
     if (keys.length > 0) {
       // 💡 THE ULTIMATE FIX: Use the spread operator (...keys) to pass items safely!
       await redis.del(...keys);
@@ -371,10 +370,10 @@ export const handleResendForgotPasswordOTP = async (req: Request, res: Response,
   }
 }
 // reset staff password controller
-export const resetStaffPasswordController = async (req:Request, res:Response, next:NextFunction) =>{
+export const resetPasswordController = async (req:Request, res:Response, next:NextFunction) =>{
     try{
         const {otpCode, new_password} = req.body
-        await resetStaffPasswordService(otpCode,new_password)
+        await resetPasswordService(otpCode,new_password)
         return res.status(200).json({
             status: "success",
             message: "Password updated successfully. You can now securely log back in."

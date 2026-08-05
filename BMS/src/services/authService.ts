@@ -207,43 +207,69 @@ export const businessProfile = async (email:string) =>{
 
 //  reset password for business owner
 export const forgotPasswordService = async (email: string) => {
-  const staffExist = await getStaffData(email);
-  if (!staffExist) {
+    const [ownerAccountExist, staffAccountExist] = await Promise.all([
+    await  getBusinessAccount(email),
+    await   getStaffData(email)
+  ]);
+
+  if (!ownerAccountExist && !staffAccountExist) {
     throw Object.assign(
       new Error('This email record is not registered on our active workspace index.'),
       { STATUS_CODES: 404 }
     );
   }
+ const validatedRoles: ("OWNER" | "STAFF")[] = [];
+  let preferredDisplayName = "Workspace User";
+
+  if (ownerAccountExist) {
+    validatedRoles.push("OWNER");
+    preferredDisplayName = ownerAccountExist.business_name || preferredDisplayName;
+  }
+  if (staffAccountExist) {
+    validatedRoles.push("STAFF");
+    preferredDisplayName = staffAccountExist.staff_name || preferredDisplayName;
+  }
+  
 
   const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-
-  // 2. 🚀 THE INVERSION FIX: Use the OTP as the KEY and save the EMAIL as the VALUE!
   const redisOtpTrackingKey = `password_reset_code:${otpCode}`;
-  
-  // ⏳ ENFORCE TIMELINE GATE: Key completely self-destructs from RAM in exactly 60 seconds!
-  await redis.set(redisOtpTrackingKey, staffExist.staff_email, 'EX', 5*60);
-
-  // 3. Drop notification metadata payload onto your background BullMQ worker queue
+   const cacheDataPayload = {
+    email: email,
+    availableRoles: validatedRoles // e.g. ["OWNER", "STAFF"] if duplicate exists!
+  };
+  await redis.set(redisOtpTrackingKey, JSON.stringify(cacheDataPayload), 'EX', 2*60);
   await onboardingQueue.add("forgot-password-otp", {
-    email:    staffExist.staff_email,
-    userName: staffExist.staff_name,
+    email:    email,
+    userName: preferredDisplayName,
     otpcode:  otpCode 
   });
 
   return { status: "success", message: "Verification token dispatched to registered inbox." };
 };
 //  staff reset password service
-export const resetStaffPasswordService = async (otpCode :string, password:string) =>{
-     const valkeyCodeKey = `password_reset_code:${otpCode}`;
-    const verifyOtp = await redis.get(valkeyCodeKey)
-    if(!verifyOtp){
-        throw Object.assign(new Error("Invalid or expired verification code sequence. Please request a new code."), {STATUS_CODES:400})
-    }
-    const newHashPasword = await bcrypt.hash(password, 12)
-    const email = verifyOtp
-    const newPassword = await staffResetPassword(email, newHashPasword)
-     await redis.del(valkeyCodeKey);
-    return newPassword
+export const resetPasswordService = async (otpCode :string, password:string) =>{
+     const redisOtpTrackingKey = `password_reset_code:${otpCode}`;
+  const cachedData = await redis.get(redisOtpTrackingKey);
+  if (!cachedData) {
+    throw Object.assign(
+      new Error('Invalid Token: This verification OTP code has expired or is incorrect.'), 
+      { STATUS_CODES: 400 }
+    );
+}
+      const { email, availableRoles } = JSON.parse(cachedData)
+      if(availableRoles ==="OWNER"){
+        const newHashPasword = await bcrypt.hash(password, 12)
+         const newPassword = await businessOwnerResetPassword(email, newHashPasword)
+          await redis.del(redisOtpTrackingKey);
+         return newPassword
+      };
+
+      if(availableRoles === "STAFF"){
+        const newHashPasword = await bcrypt.hash(password, 12)
+         const newPassword = await staffResetPassword(email, newHashPasword)
+          await redis.del(redisOtpTrackingKey);
+         return newPassword
+      } 
 }
 
 // reset business owner password service

@@ -9,19 +9,27 @@ export const handleInitializeSubscriptionPayment = async (req: Request, res: Res
     try{
         
         const {id, email} = (req as any).user
-        const {plan_name, Plan_price} = req.body
-        if (!plan_name || !Plan_price) {
-            res.status(400).json({ status: "fail", message: "Bad Request: Please supply a plan_name and plan_price." });
-            return; // Stops function execution cleanly without breaking TypeScript void typing rules
-         }
+        const { plan_name,  callback_url } = req.body;
+
+    // 🛡️ 1. SERVER-SIDE PRICE ENFORCEMENT MATRIX (Prevents frontend tamper injection attacks)
+        let amountInKobo = 0;
+        if (plan_name === "BASIC_PLAN") {
+          amountInKobo = 5000 * 100; // Paystack charges strictly in KOBO (Sub-units: ₦5,000 = 500000 kobo)
+        } else if (plan_name === "PRO_PLAN") {
+          amountInKobo = 10000 * 100; // ₦10,000 = 1000000 kobo
+        } else {
+          res.status(400).json({ status: "fail", message: "Validation Error: Unknown plan package selection string identifier." });
+          return;
+        }
          const PaystackPayload ={
             email:email,
-            amount: Number(Plan_price) * 100, // Frontend redirect post-payment
+            amount: Number(amountInKobo), // Frontend redirect post-payment
             channels: ["card"], 
+            callback_url:callback_url,
            metadata: { 
               businessId: id,          // Renamed to businessId to match model schema parameters perfectly
               plan_name:  plan_name,   // Triggers your case-insensitive uppercase enum converters seamlessly
-              plan_price: Plan_price
+              plan_price: amountInKobo
             }
          }
          const paystackResponse = await axios.post("https://api.paystack.co/transaction/initialize",
@@ -52,46 +60,47 @@ export const handleInitializeSubscriptionPayment = async (req: Request, res: Res
 
 export const handlePaystackWebhookSettlement = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    // 🔒 CYBERSECURITY SIGNATURE MATCH: Enforce hash check to block hacker fakes!
-    const reference = "uyah8smkad"
-    //  const incomingSignature = req.headers['x-paystack-signature'] ;
-    // console.log(incomingSignature)
-    // 💡 THE RETRY SAFE FIX: Read the exact unparsed text string buffer from the request stream!
-    // const rawPayloadText = (req as any).rawBody;
+    console.log("📋 COMPLETE LIST OF HEADERS RECEIVED BY YOUR ENDPOINT:");
+    console.log(req.headers); 
+    // 🔒 CYBERSECURITY SIGNATURE MATCH: Enforce hash check to block hacker fakes
+     const incomingSignature = req.headers['x-paystack-signature'] as string;
+    const rawPayloadText = (req as any).rawBody;
 
-    // if (!rawPayloadText) {
-    //   res.status(400).json({ status: "fail", message: "Bad Request: Missing raw string request payload context." });
-    //   return;
-    // }
-    //  const computedHash = crypto
-    //   .createHmac("sha512", PAYSTACK_KEY)
-    //   .update(rawPayloadText) // 🚀 Success: Passes the exact, un-mutated raw text stream data!
-    //   .digest("hex");
+    console.log("🛰️ [Incoming Webhook Signature]:", incomingSignature);
 
-    // if (incomingSignature !== computedHash) {
-    //   console.log("❌ [Cybersecurity Alert]: Encryption signatures do not match! Dropping packet.");
-    //   res.status(401).json({ status: "fail", message: "Unauthorized: Signature payload mismatch." });
-    //   return;
-    // }
+    if (!rawPayloadText) {
+      res.status(400).json({ status: "fail", message: "Bad Request: Missing raw string request payload context." });
+      return;
+    }
+     const computedHash = crypto
+      .createHmac("sha512", PAYSTACK_KEY)
+      .update(rawPayloadText) // 🚀 Success: Passes the exact, un-mutated raw text stream data!
+      .digest("hex");
 
-    // if (incomingSignature !== computedHash) {
-    //   res.status(401).json({ status: "fail", message: "Unauthorized: Signature payload mismatch." });
-    //   return;
-    // }
+    if (incomingSignature !== computedHash) {
+      console.log("❌ [Cybersecurity Alert]: Encryption signatures do not match! Dropping packet.");
+      res.status(401).json({ status: "fail", message: "Unauthorized: Signature payload mismatch." });
+      return;
+    }
 
-    // const eventPayload = req.body;
-    // console.log(eventPayload)
+    if (incomingSignature !== computedHash) {
+      res.status(401).json({ status: "fail", message: "Unauthorized: Signature payload mismatch." });
+      return;
+    }
+
+    const eventPayload = req.body;
+    console.log(eventPayload)
     // Check if credit card charge cleared successfully on Paystack network nodes
-    // if (eventPayload.event === "charge.success") {
-    //   console.log(`💰 [Paystack Webhook Alert]: Intercepted successful charge event token.`);
-    //   // console.log(eventPayload.event)
-    //   // Trigger your decoupled service layer pass-through pipeline smoothly
-    // //   await processWebhookUpgradeService(eventPayload.data);
-    // }
+    if (eventPayload.event === "charge.success") {
+      console.log(`💰 [Paystack Webhook Alert]: Intercepted successful charge event token.`);
+      // console.log(eventPayload.event)
+      // Trigger your decoupled service layer pass-through pipeline smoothly
+    //   await processWebhookUpgradeService(eventPayload.data);
+    }
 
     // Paystack strictly mandates returning an immediate HTTP 200 response string line
-    const eventPayload = req.body;
-    console.log("🛰️ [Incoming Webhook Payload Captured]:", eventPayload);
+    // const eventPayload = req.body;
+    // console.log("🛰️ [Incoming Webhook Payload Captured]:", eventPayload);
 
     // 🛡️ THE TRAFFIC GUARD FALLBACK: If a rogue client or test script accidentally hits this path with raw initializing metadata
     if (eventPayload && eventPayload.plan_name && !eventPayload.event) {
