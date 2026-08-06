@@ -82,6 +82,13 @@ export const getStaffData = async (email:string) => {
     where: {
       staff_email: email, // Look up by unique email column handle match rules
       isActive:true
+    },
+    include:{
+        business:{
+            select:{
+                business_name:true
+            }
+        }
     }
   });
   

@@ -9,7 +9,8 @@ import { createSalesService,
   getLatestSalesService,
   salesDescriptionService,
   countActiveTerminalService,
-  getTopStaffRevenueService
+  getTopStaffRevenueService,
+  getLatestThreeStaffSalesHistory
  } from "../services/salesService.js";
  import { countTenantSales } from "../models/midllewareMolde.js";
 export const handlePOSCheckout = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
@@ -350,3 +351,18 @@ export const getTopStaffRevenueController = async (req: Request, res: Response, 
     return next(error);
   }
 };
+
+//  get latest Three staff sales history controller 
+export const getLatestStaffSalesHistoryController = async (req:Request, res:Response, next:NextFunction) =>{
+  try{
+      const { id} = (req as any).user
+      const salesHistory = await getLatestThreeStaffSalesHistory(id)
+      return res.status(200).json({
+        status:"success",
+        message:"sales history retrieve successful!",
+        salesHistory
+      })
+  }catch(error:any){
+    return next(error)
+  }
+}

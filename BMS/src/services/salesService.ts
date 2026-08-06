@@ -8,7 +8,8 @@ import { createSalesModel,
   salesDescription,
   getLatestSalesModel,
   countActiveTerminalModel,
-  getTopStaffRevenueModel
+  getTopStaffRevenueModel,
+  getCurrentStaffSalesRecord
  } from "../models/salesModel";
 import { staffData } from "../models/userModel";
 import { countTenantSales } from "../models/midllewareMolde";
@@ -191,7 +192,10 @@ export const getLatestSalesService = async (busienss_id :string, page:number, li
 export const salesDescriptionService = async (salesId:string) =>{
   return await salesDescription(salesId)
 }
-
+// get current sales history service
+export const getLatestThreeStaffSalesHistory = async (staff_id:string) =>{
+  return await getCurrentStaffSalesRecord(staff_id)
+}
 //  count staff on terminal
 export const countActiveTerminalService = async (businessId:string) =>{
   const todayStart = new Date();

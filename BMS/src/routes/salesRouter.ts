@@ -12,12 +12,14 @@ import { handlePOSCheckout,
     getLatestSalesController,
     handleSalesDecription,
     getDailyTerminalStaffCount,
-    getTopStaffRevenueController
+    getTopStaffRevenueController,
+    getLatestStaffSalesHistoryController
 } from "../controllers/salesController"
 import { enforceIdempotencyKeyGate } from "../middleware/idempotency"
 export const saleRouter = Router()
 saleRouter.post("/record-sales",  verifyAccessToken,enforceIdempotencyKeyGate, checkSubscriptionActive, enforceSalesLimit, validateSalesCheckoutInput,handlePOSCheckout)
 saleRouter.get("/my-sales", verifyAccessToken,  handleGetMySalesHistory);
+saleRouter.get("/sales-history", verifyAccessToken, getLatestStaffSalesHistoryController)
 saleRouter.get('/my-summary', verifyAccessToken, handleGetCashierSalesSummary)
 saleRouter.get("/overview", verifyAccessToken, handleGetBusinessOwnerRevenueSummary)
 saleRouter.get("/top-products", verifyAccessToken, handleGetTopSellingProducts)

@@ -366,7 +366,24 @@ export const salesDescription = async (saleId: string,) =>{
     }
   })
 }
-
+// get current staff sales record 
+export const getCurrentStaffSalesRecord  = async (staff_id:string) =>{
+  return await prisma.sale.findMany({
+    where:{
+      userId:staff_id,
+    },
+    select:{
+      id:true,
+      payment_method:true,
+      total_amount:true,
+      createdAt:true
+    },
+    take:3,
+    orderBy:{
+      createdAt:"desc"
+    }
+  })
+}
 //  staff terminal count 
 
 export const countActiveTerminalModel = async (businessId:string, todayStart:Date)=>{
