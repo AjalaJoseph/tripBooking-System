@@ -22,7 +22,7 @@ export const passwordResetOtpEmailContent = (name:string, otp_code:string) => {
                 <!-- Data Display Grid Block -->
                 <div style="background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 8px; padding: 20px; margin-bottom: 24px; text-align: center;">
                     <div style="font-size: 14px; color: #4B5563; margin-bottom: 8px; text-transform: uppercase; font-weight: bold; letter-spacing: 0.05em;">
-                        Your Security OTP Code
+                        Your Security Verification Code
                     </div>
                     <div style="font-family: monospace; background: #E5E7EB; padding: 8px 16px; border-radius: 6px; color: #111827; font-size: 28px; font-weight: 800; letter-spacing: 6px; display: inline-block;">
                         ${otp_code}
@@ -32,7 +32,7 @@ export const passwordResetOtpEmailContent = (name:string, otp_code:string) => {
                 <!-- Amber Shield Protocol Warning -->
                 <div style="border-left: 4px solid #D97706; background: #FEF3C7; padding: 12px 16px; border-radius: 0 8px 8px 0;">
                     <p style="margin: 0; color: #92400E; font-size: 13px; line-height: 18px; font-weight: 500;">
-                        <strong>🔒 Expiration Gate:</strong> For your transactional safety, this token code expires in exactly <strong>5 minutes</strong>. If you did not initialize this request, your account remains secure; please disregard this notification layout block.
+                        <strong>🔒 Expiration Gate:</strong> For your transactional safety, this token code expires in exactly <strong>3 minutes</strong>. If you did not initialize this request, your account remains secure; please disregard this notification layout block.
                     </p>
                 </div>
             </div>

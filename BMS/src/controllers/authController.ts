@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from "express"
+import { onboardingQueue } from "../backgroundQueues/emailQueues";
 import { registerBusinessOwnerService,
     businessLoginServicve,
     staffRegistrationService,
@@ -111,7 +112,7 @@ export const handleStaffLogin = async (req: Request, res: Response, next: NextFu
       status: "success",
       message: "Login successful!",
       accessToken: result.accessToken,
-      staff: result.staff
+      profile: result.staff
     });
 
   } catch (error) {
@@ -291,8 +292,9 @@ export const handleGetDynamicProfileData = async (req:Request, res:Response, nex
 export const forgotPasswordController = async (req:Request, res:Response, next:NextFunction) => {
     try {
         const { email } = req.body;
-         await forgotPasswordService(email)
-          const recoveryToken = jwt.sign({ email: email }, recoverySecret, { expiresIn: "8m" });
+        const forgotPassword =  await forgotPasswordService(email)
+        const sessionId = forgotPassword.sessionId
+          const recoveryToken = jwt.sign({ sessionId }, recoverySecret, { expiresIn: "8m" });
             res.cookie("recoverySession", recoveryToken, {
                 httpOnly: true, // Prevents malicious XSS browser scripts from reading their identity context!
                 sameSite: "strict",
@@ -311,7 +313,7 @@ export const forgotPasswordController = async (req:Request, res:Response, next:N
 export const handleResendForgotPasswordOTP = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
          const { recoverySession } = req.cookies;
-    const recoverySecret = process.env.REFRESH_SECRET || " ";
+        const recoverySecret = process.env.REFRESH_SECRET || " ";
 
     if (!recoverySession) {
       res.status(401).json({ 
@@ -320,7 +322,7 @@ export const handleResendForgotPasswordOTP = async (req: Request, res: Response,
       });
       return;
     }
-      let decodedSession: any;
+       let decodedSession: any;
     try {
       decodedSession = jwt.verify(recoverySession, recoverySecret);
     } catch (err) {
@@ -328,36 +330,50 @@ export const handleResendForgotPasswordOTP = async (req: Request, res: Response,
       return;
     }
 
+
     // Capture the email address safely resolved out of the secure cookie structure
-    const targetUserEmail = decodedSession.email;
-     const lockoutKey = `resend_lockout:${targetUserEmail}`;
+     const sessionId = decodedSession.sessionId;
+    const getUserDataKey = `reset:${sessionId}`;
+    const rawSessionDataString = await redis.get(getUserDataKey);
+
+    if (!rawSessionDataString) {
+      res.status(401).json({ 
+        status: "fail", 
+        message: "Session Expired: Your recovery tracking token could not be found in memory records." 
+      });
+      return;
+    }
+    const { email, name } = JSON.parse(rawSessionDataString);
+      const lockoutKey = `resend_lockout:${sessionId}`;
     const isLockedOut = await redis.get(lockoutKey);
-    console.log(isLockedOut)
     if (isLockedOut) {
       res.status(429).json({ 
         status: "fail", 
         code: "RATE_LIMIT_EXCEEDED", 
-        message: "Rate Limit Exceeded: Please wait 1 minute before requesting another email dispatch." 
+        message: "Rate Limit Exceeded: Please wait up to 2 minutes before requesting another email dispatch." 
       });
       return;
     }
      const allActiveKeys = await redis.keys("password_reset_code:*");
-     console.log(allActiveKeys)
     let activeOtpCodeToDeliver: string | null = null;
 
     // Iterate through all active reset keys in RAM to find if an unexpired token maps to this user's email
     for (const currentKey of allActiveKeys) {
       const mappedEmailValue = await redis.get(currentKey);
-      if (mappedEmailValue === targetUserEmail) {
+      if (mappedEmailValue === email) {
         // Extract the raw 6-digit numeric string right out of the key suffix block!
         activeOtpCodeToDeliver = currentKey.split(":")[1];
         break; // Found it! Stop searching immediately.
       }
     }
     if(activeOtpCodeToDeliver){
-      return;
+     await onboardingQueue.add("forgot-password-otp", {
+        email: email,
+        userName: name,
+        otpcode: activeOtpCodeToDeliver
+      });
     }else{
-      await forgotPasswordService(targetUserEmail)
+      await forgotPasswordService(email)
     }
     await redis.set(lockoutKey, 'active', 'EX', 2*60);
     res.status(200).json({ 

@@ -1,4 +1,4 @@
-
+import crypto from "crypto"
 import { registerBusinessOwner,
     getBusinessAccount,
     getStaffData,
@@ -233,18 +233,20 @@ export const forgotPasswordService = async (email: string) => {
 
   const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
   const redisOtpTrackingKey = `password_reset_code:${otpCode}`;
+  const sessionId = crypto.randomUUID()
    const cacheDataPayload = {
     email: email,
     availableRoles: validatedRoles // e.g. ["OWNER", "STAFF"] if duplicate exists!
   };
-  await redis.set(redisOtpTrackingKey, JSON.stringify(cacheDataPayload), 'EX', 2*60);
+  await redis.set(redisOtpTrackingKey, JSON.stringify(cacheDataPayload), 'EX', 3*60);
+  await redis.set(`reset:${sessionId}`, JSON.stringify({ email:email, name:preferredDisplayName }), 'EX', 480)
   await onboardingQueue.add("forgot-password-otp", {
     email:    email,
     userName: preferredDisplayName,
     otpcode:  otpCode 
   });
 
-  return { status: "success", message: "Verification token dispatched to registered inbox." };
+  return { status: "success", sessionId:sessionId, message: "Verification token dispatched to registered inbox." };
 };
 //  staff reset password service
 export const resetPasswordService = async (otpCode :string, password:string) =>{
