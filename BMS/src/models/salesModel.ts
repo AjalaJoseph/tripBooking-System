@@ -1,43 +1,82 @@
 import { prisma } from "../config/db.js";
 import { logger } from "../config/logger.js";
-export const createSalesModel = async (salesData: any) => {
-
+export const createSalesModel = async (salesData: any) =>{
   return await prisma.$transaction(async (tx) => {
-    
-    // Step 1: Create the single primary master parent sale summary invoice voucher
+    // 1. Create the sale header
     const createdSaleHeader = await tx.sale.create({
       data: {
-        businessId:     salesData.business_id,
-        userId:         salesData.user_id,
-        recorded_by:    salesData.staff_name,
+        businessId: salesData.business_id,
+        userId: salesData.user_id,
+        recorded_by: salesData.staff_name,
         payment_method: salesData.payment_method,
-        total_amount:   salesData.total_amount
+        total_amount: salesData.total_amount,
+      },
+    });
+
+    const saleItemsRows = [];
+
+    // 2. Process each sold product
+    for (const item of salesData.products) {
+      const quantity = parseInt(item.quantity, 10)
+      // ==========================================
+      // TRACKED PRODUCT
+      // ==========================================
+      if (item.productId) {
+        const updatedProduct = await tx.product.updateMany({
+          where: {
+            id:item.productId,
+            businessId: salesData.business_id,
+          },
+          data:{
+            stockCount:{
+              decrement:quantity
+            }
+          }
+        });
+
+        // Product doesn't exist / doesn't belong to this business
+        // if (updatedProduct.count !== 1) {
+        //   throw new Error(
+        //     `Product "${item.product_name}" was not found`
+        //   );
+        // }
       }
+
+      // ==========================================
+      // SALE ITEM
+      // ==========================================
+      // For both tracked and untracked products,
+      // the sale item is recorded.
+      //
+      // If productId is null:
+      // - no inventory update happens.
+      //
+      // If productId exists:
+      // - stock has already been deducted above.
+
+      saleItemsRows.push({
+        saleId: createdSaleHeader.id,
+        productId: item.productId || null,
+        productName: item.product_name,
+        quantity:quantity,
+        unit_price: Number(item.unit_price),
+        total_price: Number(item.total_price),
+      });
+    }
+
+    // 3. Insert all sale items
+    const batchSummary = await tx.saleItem.createMany({
+      data: saleItemsRows,
     });
 
-    const secureSaleId = createdSaleHeader.id;
-
-    // Step 2: Map variables synchronously inside RAM to compile an array of relational child lines
-    const saleItemsRows = salesData.products.map((item: any) => ({
-      saleId:       secureSaleId, // ✅ Safely links each child row straight to our new parent voucher ID
-       productId:   item.productId ? item.productId : null,
-      productName:  item.product_name,
-      quantity:     parseInt(item.quantity as any),
-      unit_price:   Number(item.unit_price),
-      total_price:  Number(item.total_price)
-    }));
-
-     const batchSummary = await tx.saleItem.createMany({
-      data: saleItemsRows
-    });
-    
+    // 4. Return result
     return {
       saleHeader: createdSaleHeader,
-      saleItems:  saleItemsRows, // This returns the actual array list holding your names, quantities, and prices!
+      saleItems: saleItemsRows,
       meta: {
-        itemsInserted: batchSummary.count
-      }
-    }
+        itemsInserted: batchSummary.count,
+      },
+    };
   });
 };
 

@@ -2,7 +2,8 @@ import { Request, Response, NextFunction } from "express";
 import { createBulkProductsService,
     getAllProductsService,
     editProductService,
-    deleteSingleProductService
+    deleteSingleProductService,
+    getProductForCashierSalesService
  } from "../services/productService";
 export const handleBulkProductsUpload = async (req:Request, res:Response, next:NextFunction) =>{
     try{
@@ -30,7 +31,7 @@ export const handleGetProductsController = async (req:Request, res:Response, nex
         const page = Math.max(1, parseInt(pageStr) || 1);
         const limitStr = req.query.limit as string;
         const limit = Math.max(1, parseInt(limitStr) || 10);
-         const search = req.query.search as string || " "
+         const search = (req.query.search as string) || "";
         const getProducts = await getAllProductsService(id, page, limit,search)
          res.status(200).json({
             status: "success",
@@ -68,10 +69,8 @@ export const handleEditSingleProduct = async (req: Request, res: Response, next:
 //  delete single product controller
 export const handleDeleteSingleProduct = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    // Extract multi-tenant security tokens injected by your verifyAccessToken middleware guard
     const { id } = (req as any).user;
-    
-    // Extract the target product primary key UUID from the URL path parameter string
+  
     const { productId } = req.params;
     const deletedProductSummary = await deleteSingleProductService(id, productId);
 
@@ -85,3 +84,19 @@ export const handleDeleteSingleProduct = async (req: Request, res: Response, nex
     return next(error);
   }
 };
+
+//  get product for cashier controller
+export const handleGetProductForCashierController = async (req:Request, res:Response, next:NextFunction) =>{
+  try{
+    const {id } = (req as any).user
+     const search = (req.query.search as string) || "";
+    const productsList = await getProductForCashierSalesService(id, search)
+     return res.status(200).json({
+      status: "success",
+      message: "Inventory records compiled successfully for terminal cashier usage.",
+      data: productsList
+    });
+  }catch(error){
+    return next(error)
+  }
+}

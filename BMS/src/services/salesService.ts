@@ -27,7 +27,7 @@ export const createSalesService = async (userId:string,paymentMethod:string, sal
     return {
       productId:    item.productId || null,
       product_name: item.product_name,
-      quantity:     parseInt(item.quantity),
+      quantity:      parseInt(item.quantity, 10),
       unit_price:   Number(item.unit_price),
       total_price:  calculatedLinePrice // Automatically injects calculated total per line
     };

@@ -106,3 +106,36 @@ export const deleteSingleProductModel = async(productId:any)=>{
     }
   })
 }
+
+//  get product for cashier search 
+export const getProductForCashierSalesModel = async (businessId:any, searchQuery:string) =>{
+    const trimmedQuery = searchQuery?.trim() || "";
+ if (trimmedQuery === "") {
+   return await prisma.product.findMany({
+    where:{
+      businessId:businessId
+    },
+    take:50,
+    select:{
+      id:true,
+      product_name:true,
+      sellingPrice:true,
+      stockCount:true
+    }
+  })
+ }
+
+ return await prisma.product.findMany({
+    where:{
+      businessId:businessId,
+      product_name:{contains:trimmedQuery, mode: 'insensitive'}
+    },
+    take:10,
+    select:{
+      id:true,
+      product_name:true,
+      sellingPrice:true,
+      stockCount:true
+    }
+  })
+}

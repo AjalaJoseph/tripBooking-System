@@ -4,7 +4,7 @@ import crypto from "crypto";
 import dotenv from "dotenv"
 import { getPaymentService, updateSubscriptionService } from "../services/subscriptionService";
 dotenv.config()
-const PAYSTACK_KEY = process.env.PAYSTACK_TEST_KEY || " "
+const PAYSTACK_KEY = process.env.PAYSTACK_SECRET_KEY || " "
 export const handleInitializeSubscriptionPayment = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try{
         
@@ -13,9 +13,9 @@ export const handleInitializeSubscriptionPayment = async (req: Request, res: Res
 
     // 🛡️ 1. SERVER-SIDE PRICE ENFORCEMENT MATRIX (Prevents frontend tamper injection attacks)
         let amountInKobo = 0;
-        if (plan_name === "BASIC_PLAN") {
+        if (plan_name.toUpperCase() === "BASIC_PLAN") {
           amountInKobo = 5000 * 100; // Paystack charges strictly in KOBO (Sub-units: ₦5,000 = 500000 kobo)
-        } else if (plan_name === "PRO_PLAN") {
+        } else if (plan_name.toUpperCase() === "PRO_PLAN") {
           amountInKobo = 10000 * 100; // ₦10,000 = 1000000 kobo
         } else {
           res.status(400).json({ status: "fail", message: "Validation Error: Unknown plan package selection string identifier." });

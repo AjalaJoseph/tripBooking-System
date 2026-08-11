@@ -3,8 +3,10 @@ import { insertBulkProductsModel,
   getAllProducts,
   checkProduct,
   updateSingleProductModel,
-  deleteSingleProductModel
+  deleteSingleProductModel,
+  getProductForCashierSalesModel
  } from "../models/products";
+ import { staffData } from "../models/userModel";
 export const createBulkProductsService = async (businessId: string, productsArray: any[]) => {
   const batchOperationSummary = await insertBulkProductsModel(businessId, productsArray);
   return batchOperationSummary; 
@@ -41,4 +43,12 @@ export const deleteSingleProductService = async (businessId:string, productId:an
     throw Object.assign(new Error("Unauthorized: you can only delete products upload by your business"),{STATUS_CODES:403})
   }
   return deleteSingleProductModel(productId)
+}
+
+//  get product for cashier search
+
+export const getProductForCashierSalesService = async (staff_id:string, searchQuery:string) =>{
+  const getBusinessId = await staffData(staff_id)
+  const businesId = getBusinessId?.businessId
+  return await getProductForCashierSalesModel(businesId, searchQuery)
 }

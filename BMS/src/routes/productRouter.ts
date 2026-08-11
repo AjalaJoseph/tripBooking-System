@@ -1,5 +1,5 @@
 import { Router } from "express"
-import { handleBulkProductsUpload, handleGetProductsController, handleEditSingleProduct, handleDeleteSingleProduct } from "../controllers/productsController"
+import { handleBulkProductsUpload, handleGetProductsController, handleEditSingleProduct, handleDeleteSingleProduct, handleGetProductForCashierController } from "../controllers/productsController"
 import { validateBulkProductInput, validateEditProductInput} from "../validators/productValidator"
 import { verifyAccessToken } from "../middleware/verifyAccessToken"
  export const productRouter = Router()
@@ -7,3 +7,4 @@ productRouter.post('/upload-products', verifyAccessToken,validateBulkProductInpu
 productRouter.get('/products', verifyAccessToken,handleGetProductsController)
 productRouter.patch("/products/:productId/edit", verifyAccessToken, validateEditProductInput, handleEditSingleProduct);
 productRouter.delete("/products/:productId/delete", verifyAccessToken,handleDeleteSingleProduct)
+productRouter.get("/terminal-product", verifyAccessToken, handleGetProductForCashierController)

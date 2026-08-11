@@ -111,6 +111,12 @@ export const staffLoginServicve = async (email:string, password:string) =>{
     if(!staffExist){
        throw Object.assign(new Error("Staff not found"), {STATUS_CODES:404})
     }
+
+    if(staffExist.isActive === false){
+        throw Object.assign(new Error("Your staff account has been deactivated by management. Please contact your administrator."), {
+            STATUS_CODES: 403 
+         });
+    }
     const isPasswordMatch = await bcrypt.compare(password,staffExist.password)
     if(!isPasswordMatch){
         throw Object.assign(new Error("Invalid crediential"), {STATUS_CODES:400})

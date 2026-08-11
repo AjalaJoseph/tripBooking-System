@@ -80,8 +80,7 @@ export const registerStaff = async (data:any) =>{
 export const getStaffData = async (email:string) => {
   const staff = await prisma.user.findUnique({
     where: {
-      staff_email: email, // Look up by unique email column handle match rules
-      isActive:true
+      staff_email: email
     },
     include:{
         business:{
