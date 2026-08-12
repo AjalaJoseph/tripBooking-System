@@ -82,41 +82,74 @@ export const createSalesModel = async (salesData: any) =>{
 
 //  get single staff sales
 
-export const fetchCashierSalesHistoryModel = async (business_id:string, user_id:string, page:number=1, limit:number=20) =>{
+export const fetchCashierSalesHistoryModel = async (
+  business_id:string, 
+  user_id:string, 
+  page:number=1, 
+  limit:number=10,
+   searchQuery:string
+  ) =>{
   const skip = (page - 1)*limit
-  const totalSales = await prisma.sale.count({
-    where:{
-      userId:user_id,
-      businessId:business_id
-    }
-  })
-  const totalPages = Math.ceil(totalSales/limit)
-  const allSales = await prisma.sale.findMany({
-    where:{
-      businessId:business_id,
-      userId:user_id
-    },
-    skip:skip,
-    take:limit,
-    include:{
-      items:true
-    },
-    orderBy:{
-      createdAt:"desc"
-    }
-  })
+  const whereConditions: any = {
+      businessId: business_id,
+      userId: user_id
+    };
+    if (searchQuery && searchQuery.trim() !== "") {
+  const trimmedQuery = searchQuery.trim();
+  const normalizedQuery = trimmedQuery.toUpperCase();
 
-  return {
-    allSales,
-    pagination: {
-            totalProducts: totalSales,
-            totalPages: totalPages,
-            currentPage: page,
-            limit: limit,
-            hasNextPage: page < totalPages,
-            hasPreviousPage: page > 1
-        }
+  const orConditions: any[] = [];
+
+  // 💵 Search by payment method
+  if (
+    normalizedQuery === "CASH" ||
+    normalizedQuery === "CARD" ||
+    normalizedQuery === "TRANSFER"
+  ) {
+    orConditions.push({
+      payment_method: normalizedQuery,
+    });
   }
+
+  // 💰 Search by total amount
+  const parsedAmount = parseFloat(trimmedQuery);
+
+  if (!isNaN(parsedAmount)) {
+    orConditions.push({
+      total_amount: {
+        equals: parsedAmount,
+      },
+    });
+  }
+
+  whereConditions.OR = orConditions;
+}
+
+ const [totalSales, allSales] = await prisma.$transaction([
+      prisma.sale.count({ where: whereConditions }),
+      prisma.sale.findMany({
+        where: whereConditions,
+        skip: skip,
+        take: limit,
+        orderBy: {
+          createdAt: "desc" // Forces new invoices to position at the top row lane layout
+        }
+      })
+    ]);
+
+    const totalPages = Math.ceil(totalSales / limit);
+
+    return {
+      allSales,
+      pagination: {
+        totalRecords: totalSales,
+        totalPages: totalPages,
+        currentPage: page,
+        limit: limit,
+        hasNextPage: page < totalPages,
+        hasPreviousPage: page > 1
+      }
+    };
 }
 
 //  get daily , weekly, monthly sales summary

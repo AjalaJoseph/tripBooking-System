@@ -37,14 +37,13 @@ export const handleGetMySalesHistory = async (req: Request, res: Response, next:
   try {
     // 💡 Security Check: Extract identity strings safely from your verified token payload session
     const {id: userId } = (req as any).user;
-    // Parse text strings out of Express req.query, fallback safely to defaults
     const pageStr = req.query.page as string;
     const limitStr = req.query.limit as string;
     const page = Math.max(1, parseInt(pageStr) || 1);
-    const limit = Math.max(1, parseInt(limitStr) || 20); // Standardizing on 10 rows per page view
-
-    // Invoke your paginated sales lookup engine service layer
-    const historySummaryBundle = await getCashierSalesHistoryService(userId, page, limit);
+    const limit = Math.max(1, parseInt(limitStr) || 10); 
+    const search = (req.query.search as string) || "";
+    const formatSerach = search.toUpperCase()
+    const historySummaryBundle = await getCashierSalesHistoryService(userId, page, limit, formatSerach);
 
     // Return the clean records list to your BizFlow frontend data table view
     res.status(200).json({

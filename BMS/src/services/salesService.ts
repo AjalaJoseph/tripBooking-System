@@ -45,13 +45,13 @@ export const createSalesService = async (userId:string,paymentMethod:string, sal
 }
 
 // get all single cashier sales service
-export const getCashierSalesHistoryService = async (userId:string, page:number, limit:number)=>{
+export const getCashierSalesHistoryService = async (userId:string, page:number, limit:number, searchQuery:string)=>{
   const getBusinessId = await staffData(userId)
   let business_id =""
   if(getBusinessId && getBusinessId.businessId){
     business_id=getBusinessId.businessId
   }
-  return await fetchCashierSalesHistoryModel(business_id,userId,page, limit)
+  return await fetchCashierSalesHistoryModel(business_id,userId,page, limit, searchQuery)
 }
 
 //  get daily, weekly, monthly sales summary
