@@ -12,8 +12,9 @@ import { registerBusinessOwner,
     staffResetPassword,
     deActivateStaffModel
  } from "../models/userModel";
+ import { accountBucketService } from "../middleware/accountBucket";
+ import { hashRefreshToken } from "../ultil/hashToken";
  import bcrypt from "bcrypt";
- import { logger } from '../config/logger';
  import {redis} from "../config/redis"
  import { onboardingQueue } from "../backgroundQueues/emailQueues";
  import { generateAccessToken, generateRefreshToken } from "../ultil/generateToken";
@@ -43,29 +44,71 @@ export const businessLoginServicve = async (email:string, password:string) =>{
     if(!businessExist){
        throw Object.assign(new Error("Business not found"), {STATUS_CODES:404})
     }
-    const isPasswordMatch = await bcrypt.compare(password,businessExist.password)
-    if(!isPasswordMatch){
-        throw Object.assign(new Error("Invalid crediential"), {STATUS_CODES:400})
-    }
-    let accessToken = "";
-    let refreshToken = "";
-    if(businessExist && businessExist.business_email){
-         accessToken = generateAccessToken(businessExist.business_email, businessExist.id,businessExist.role )
-         refreshToken = generateRefreshToken(businessExist.business_email, businessExist.id,businessExist.role )
-    }
-    const redisKey = `refresh:${businessExist.id}`;
-    await redis.set(redisKey, refreshToken, "EX", 7 * 24 * 60 * 60)
-    delete (businessExist as any).password
-    return{
-        accessToken,
-        refreshToken,
-        profile:{
-          id:businessExist.id,
-          business_name:businessExist.business_name,
-          business_email:businessExist.business_email,
-          role:businessExist.role
+    const account = await accountBucketService.isBlocked(businessExist.id);
+
+        if (account.blocked) {
+        throw Object.assign(
+            new Error("Too many failed login attempts. Please wait until the account is unlocked."),
+            { STATUS_CODES: 429, retryAfter:account.retryAfter }
+        );
         }
-    }
+
+        const isPasswordMatch = await bcrypt.compare(
+        password,
+        businessExist.password
+        );
+
+        if (!isPasswordMatch) {
+        const result = await accountBucketService.recordFailure(businessExist.id);
+
+        if (result.blocked) {
+            throw Object.assign(new Error("Too many failed login attempts. Please wait until the account is unlocked."),
+            { STATUS_CODES: 429, retryAfter:900 }
+            );
+        }
+
+        if (result.attempts>=4) {
+            throw Object.assign(
+            new Error("Invalid credentials. You have 1 login attempt remaining."),
+            { STATUS_CODES: 400 }
+            );
+        }
+
+        throw Object.assign(new Error("Invalid credentials."),{ STATUS_CODES: 400 });
+        }
+        // let accessToken = "";
+        // let refreshToken = "";
+        // if(businessExist && businessExist.business_email){
+
+            const familyId = crypto.randomUUID();
+          const  accessToken = generateAccessToken(
+                    String(businessExist.business_email), 
+                    String(businessExist.id),
+                    String(businessExist.role) 
+                )
+           const {token:refreshToken, jti} = generateRefreshToken(
+                String(businessExist.business_email), 
+                String(businessExist.id),
+                familyId,
+                String(businessExist.role) 
+            )  
+            const refreshTokenHash = hashRefreshToken(refreshToken)     
+        //  }
+         accountBucketService.clear(businessExist.id)
+            const redisKey = `refresh:${jti}`;
+           await redis.set(redisKey, JSON.stringify({userId: businessExist.id, refresh:refreshTokenHash,}), "EX", 7 * 24 * 60 * 60);
+           await redis.sadd(`refresh-family:${familyId}`,jti);
+           delete (businessExist as any).password
+            return{
+                accessToken,
+                refreshToken,
+                profile:{
+                id:businessExist.id,
+                business_name:businessExist.business_name,
+                business_email:businessExist.business_email,
+                role:businessExist.role
+                }
+            }
 }
 
 
@@ -117,24 +160,56 @@ export const staffLoginServicve = async (email:string, password:string) =>{
             STATUS_CODES: 403 
          });
     }
-    const isPasswordMatch = await bcrypt.compare(password,staffExist.password)
-    if(!isPasswordMatch){
-        throw Object.assign(new Error("Invalid crediential"), {STATUS_CODES:400})
-    }
-    let accessToken = "";
-    let refreshToken = "";
-    if(staffExist && staffExist.staff_email){
-         accessToken = generateAccessToken(staffExist.staff_email, staffExist.id,staffExist.role )
-         refreshToken = generateRefreshToken(staffExist.staff_email, staffExist.id, staffExist.role)
-    }
-    const redisKey = `refresh:${staffExist.id}`;
-    await redis.set(redisKey, refreshToken, "EX", 7 * 24 * 60 * 60)
-    delete (staffExist as any).password
-    return{
-        staff:staffExist,
-        accessToken,
-        refreshToken
-    }
+     const account = await accountBucketService.isBlocked(staffExist.id);
+
+        if (account.blocked) {
+        throw Object.assign( new Error("Too many failed login attempts. Please wait until the account is unlocked."),
+            { STATUS_CODES: 429, retryAfter:account.retryAfter }
+        );
+        }
+
+        const isPasswordMatch = await bcrypt.compare(password, staffExist.password);
+        if (!isPasswordMatch) {
+        const result = await accountBucketService.recordFailure(staffExist.id);
+
+        if (result.blocked) {
+            throw Object.assign(new Error("Too many failed login attempts. Please wait until the account is unlocked."),
+            { STATUS_CODES: 429, retryAfter:900 }
+            );
+        }
+
+        if (result.attempts>=4) {
+            throw Object.assign(
+            new Error(
+                "Invalid credentials. You have 1 login attempt remaining."
+            ),
+            { STATUS_CODES: 400 }
+            );
+        }
+
+        throw Object.assign(
+            new Error("Invalid credentials."),
+            { STATUS_CODES: 400 }
+        );
+        }
+    // let accessToken = "";
+    // let refreshToken = "";
+    // if(staffExist && staffExist.staff_email){
+        const familyId = crypto.randomUUID();
+         const accessToken = generateAccessToken(staffExist.staff_email, staffExist.id,staffExist.role )
+         const{token:refreshToken, jti} = generateRefreshToken(staffExist.staff_email, staffExist.id, familyId,staffExist.role)
+         const refreshTokenHash = hashRefreshToken(refreshToken)
+    // }
+        accountBucketService.clear(staffExist.id)
+        const redisKey = `refresh:${jti}`;
+        await redis.set(redisKey, JSON.stringify({userId: staffExist.id, refresh:refreshTokenHash,}), "EX",7 * 24 * 60 * 60);
+        await redis.sadd(`refresh-family:${familyId}`,jti);
+        delete (staffExist as any).password
+        return{
+            staff:staffExist,
+            accessToken,
+            refreshToken
+        }
 }
 
 //  change staff temporary password service
@@ -292,4 +367,59 @@ export const resetBusinessOwnerPasswordService = async (otpCode :string, passwor
     const newPassword = await businessOwnerResetPassword(email, newHashPasword)
      await redis.del(valkeyCodeKey);
     return newPassword
+}
+
+// refresh token rotation service 
+export const refrsehTokenRotationService = async (email:string, id:string, role:string, oldJti:string, familyId:string) =>{
+    const oldRefreshKey = `refresh:${oldJti}`;
+     const revokedKey = `revoked-refresh:${oldJti}`;
+     const REFRESH_TOKEN_TTL = 7 * 24 * 60 * 60;
+      const atomicConsumeScript = `
+            local oldSession = redis.call("GET", KEYS[1])
+
+            if not oldSession then
+            return 0
+            end
+
+            redis.call("DEL", KEYS[1])
+
+            redis.call(
+            "SET",
+            KEYS[2],
+            ARGV[1],
+            "EX",
+            ARGV[2]
+            )
+
+            return 1
+        `;
+
+        const consumed = await redis.eval(
+                atomicConsumeScript,
+                2,
+                oldRefreshKey,
+                revokedKey,
+                JSON.stringify({
+                userId: id,
+                familyId:familyId,
+                reason: "ROTATED",
+                }),
+                REFRESH_TOKEN_TTL
+            );
+             if (consumed !== 1) {
+                return {
+                success: false,
+                reuseDetected: true,
+                };
+            }
+        const {token: newRefreshToken, jti: newJti,} = generateRefreshToken(email,id,familyId,role);
+        const newRefreshTokenHash = hashRefreshToken(newRefreshToken)
+        await redis.set( `refresh:${newJti}`, JSON.stringify({userId: id, refresh: newRefreshTokenHash,}),"EX",REFRESH_TOKEN_TTL );
+        await redis.sadd(`refresh-family:${familyId}`, newJti);
+        return {
+            success: true,
+            reuseDetected: false,
+            refreshToken: newRefreshToken,
+            jti: newJti,
+        };
 }

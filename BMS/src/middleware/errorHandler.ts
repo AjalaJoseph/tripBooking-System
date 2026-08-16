@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { logger } from '../config/logger';
 export const globalErrorHandler = (err: any, req: Request, res: Response, next: NextFunction) => {
     const statusCode = err.STATUS_CODES || 500
+    const retryAfter = err.retryAfter;
      if(statusCode === 500){
          logger.error({
         message: err.message || "An unexpected application error occurred.",
@@ -17,8 +18,14 @@ export const globalErrorHandler = (err: any, req: Request, res: Response, next: 
         }
     });
     }
-    return res.status(statusCode).json({
-    status: statusCode,
-    message: err.message || 'An unexpected internal processing breakdown occurred.'
-  });
+     const response: {status: number; message: string; retryAfter?: number;} = {
+        status: statusCode,
+        message: err.message ||"An unexpected internal processing breakdown occurred.",
+    };
+
+  if (retryAfter !== undefined) {
+    response.retryAfter = retryAfter;
+  }
+
+  return res.status(statusCode).json(response);
 }

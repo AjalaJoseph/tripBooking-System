@@ -2,52 +2,107 @@ import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 import { redis } from "../config/redis";
+import { hashRefreshToken } from "../ultil/hashToken";
+import { revokeRefreshTokenFamily } from "../ultil/revokedUserSession";
 dotenv.config();
+
 export const verifyRefreshToken = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { refreshToken } = req.cookies;
-    // 💡 Typing Check: Ensured environment key alignment (REFRESH_SECRET)
-    const refreshKey = process.env.REFRESH_SECRET || " ";
-
+    const refreshKey = process.env.REFRESH_SECRET;
+      if (!refreshKey) {
+          throw new Error("REFRESH_SECRET is not configured");
+        }
     if (!refreshToken) {
       return res.status(401).json({ 
         status: "fail", 
         message: "Authentication Failure: Refresh token token cookie is missing." 
       });
     }
-
-    // 1. 🛡️ SAFE SYNC DECODE WITH INTERFACE TYPE CASTING
-    // This interface allows the compiler to recognize your custom claims alongside native JWT properties
     const decoded = jwt.verify(refreshToken, refreshKey) as {
       id: string;
       email: string;
       role: string;
+      jti: string;
+      familyId:string;
       exp: number;
     };
-
-    const { id } = decoded;
-
-    // 2. 🔍 CROSS-REFERENCE AGAINST YOUR REDIS RAM INSTANCE CONNECTION MATCH
-    const cachedRedisToken = await redis.get(`refresh:${id}`);
-    
-    if (!cachedRedisToken || refreshToken !== cachedRedisToken) {
-      return res.status(403).json({ 
-        status: "fail", 
-        message: "Access Denied: Invalid or expired session instance. Please re-authenticate." 
+    if (!decoded.jti || decoded.familyId) {
+      return res.status(403).json({
+        status: "fail",
+        message: "Invalid refresh token session.",
       });
     }
 
-    // 3. 🚀 SESSION INJECTION PASS-THROUGH
-    // Safely pipe the entire decoded token payload down to downstream session targets
-    (req as any).user = {
-      id:         decoded.id,
-      email:      decoded.email,
-      role:       decoded.role,
-      exp:        decoded.exp
+    const familyRevoked = await redis.exists(`revoked-family:${decoded.familyId}`);
+
+    if (familyRevoked) {
+      return res.status(403).json({
+        status: "fail",
+        code: "REFRESH_FAMILY_REVOKED",
+        message:"This session has been revoked. Please sign in again.",
+      });
+    }
+
+    const redisKey = `refresh:${decoded.jti}`;
+    const cachedToken = await redis.get(redisKey);
+
+    if (!cachedToken) {
+       const revokedToken = await redis.get(`revoked-refresh:${decoded.jti}`);
+          if (revokedToken) {
+            const revokedSession = JSON.parse(revokedToken);
+            const { userId, familyId, reason } = revokedSession;
+
+            // Make sure the revoked record belongs to this user
+            if (userId !== decoded.id || !familyId) {
+              return res.status(403).json({
+                status: "fail",
+                code: "INVALID_REFRESH_TOKEN",
+                message: "Invalid refresh token session.",
+              });
+            }
+            console.warn(`Refresh token reuse detected for user ${decoded.id}, family ${familyId}` );
+            await revokeRefreshTokenFamily(familyId);
+            // 🚨 REFRESH TOKEN REUSE DETECTED
+            return res.status(403).json({
+              status: "fail",
+              code: "REFRESH_TOKEN_REUSE_DETECTED",
+              message: "Refresh token reuse detected. Please sign in again.",
+            });
+          }
+
+      return res.status(403).json({
+        status: "fail",
+        message:"Access denied. This refresh token has already been revoked or is invalid.",
+      });
+    }
+
+    const session = JSON.parse(cachedToken);
+    const incomingHash = hashRefreshToken(refreshToken);
+    if (session.refresh !== incomingHash) {
+      return res.status(403).json({
+        status: "fail",
+        message: "Invalid refresh token session.",
+      });
+    }
+
+    if (session.userId !== decoded.id) {
+        return res.status(403).json({
+          status: "fail",
+          message: "Invalid refresh token session.",
+        });
+    }
+   
+     (req as any).user = {
+      id: decoded.id,
+      email: decoded.email,
+      role: decoded.role,
+      jti: decoded.jti,
+      familyId:decoded.familyId,
+      exp: decoded.exp,
     };
 
     return next();
-
   } catch (error) {
     // 🔒 If the token is mathematically expired or altered, catch it here instead of crashing the server!
     return res.status(401).json({

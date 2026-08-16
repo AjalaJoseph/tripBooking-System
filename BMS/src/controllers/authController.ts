@@ -13,13 +13,14 @@ import { registerBusinessOwnerService,
     forgotPasswordService,
     resetPasswordService,
     resetBusinessOwnerPasswordService,
-    deActivateStaffService
+    deActivateStaffService,
+    refrsehTokenRotationService
  } from "../services/authService"
 
 import jwt from "jsonwebtoken";
  import { redis } from "../config/redis"
  import dotenv from "dotenv"
-import { generateAccessToken } from "../ultil/generateToken"
+import { generateAccessToken, generateRefreshToken } from "../ultil/generateToken"
 dotenv.config()
  const recoverySecret = process.env.REFRESH_SECRET || " ";
 export const registerBusinessOwnerController = async (req:Request,res:Response, next:NextFunction) =>{
@@ -415,9 +416,17 @@ export const resetBusinessOwnerPasswordController = async (req:Request, res:Resp
 // refresh token controller
 export const refreshTokenController = async(req:Request, res:Response, next:NextFunction):Promise<void> =>{
   try{
-    const {email, id, role} = (req as any).user
-        const newAccessToken = generateAccessToken(email, id, role)
-         res.status(200).json({
+    const {email, id, role, jti:oldJti, familyId} = (req as any).user
+        const newAccessToken =await generateAccessToken(email, id, role)
+       const newRefreshToken = await refrsehTokenRotationService(email, id, role, oldJti, familyId)
+        res.cookie("refreshToken", newRefreshToken, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "strict",
+          maxAge: 7 * 24 * 60 * 60 * 1000,
+          path: "/",
+        });
+        res.status(200).json({
             status: "success",
             message: "Access token  rotation executed successfully.",
             accessToken: newAccessToken

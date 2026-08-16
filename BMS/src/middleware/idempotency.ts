@@ -1,25 +1,16 @@
 import { Request, Response, NextFunction } from "express";
 import { redis } from "../config/redis.js";
 
-/**
- * Enterprise-grade Idempotency Key Gateway Middleware.
- * Decodes header parameters, replays cached success strings, and guarantees self-healing locks on errors.
- */
 export const enforceIdempotencyKeyGate = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const rawIdempotencyKey = req.headers['idempotency-key'];
-
-    // 💡 If the client request lacks a tracking header, pass control safely down to normal routing stacks
     if (!rawIdempotencyKey) {
       return next();
     }
-
     const redisLockKey = `idempotency:${rawIdempotencyKey}`;
     const LOCK_TIME_SECONDS = 180; // 3-minute network recovery timeline frame
 
-    // 🔒 STEP 1: ACQUIRE EXCLUSIVE PROCESSING MUTEX LOCK
-    // NX: Set only if missing. EX: Self-destruct timer execution boundary.
-    const acquiredLockResult = await redis.set(redisLockKey, 'PROCESSING',  'EX', LOCK_TIME_SECONDS);
+    const acquiredLockResult = await redis.set(redisLockKey, 'PROCESSING',  'EX', LOCK_TIME_SECONDS, "NX");
 
     if (!acquiredLockResult) {
       const existingLockDataCache = await redis.get(redisLockKey);
@@ -62,22 +53,21 @@ export const enforceIdempotencyKeyGate = async (req: Request, res: Response, nex
           redisLockKey, 
           JSON.stringify({ statusCode: res.statusCode, body: responseBodyCaptured }), 
           'EX', 
-          LOCK_TIME_SECONDS
+          LOCK_TIME_SECONDS,
+          "NX"
         );
       } else {
-        // 🧼 ANTIMATTER LOCK WIPER: If the database threw an exception or rejected an invalid input parameter, 
-        // clear the processing block instantly so they can immediately retry their checkout submission!
         await redis.del(redisLockKey);
       }
     });
 
-    // Handle abrupt network dropouts / client connection cancellations safely
-    res.on('close', async () => {
-      const currentCacheState = await redis.get(redisLockKey);
-      if (currentCacheState === 'PROCESSING') {
-        await redis.del(redisLockKey); // Wipe deadlocks cleanly
-      }
-    });
+    // // Handle abrupt network dropouts / client connection cancellations safely
+    // res.on('close', async () => {
+    //   const currentCacheState = await redis.get(redisLockKey);
+    //   if (currentCacheState === 'PROCESSING') {
+    //     await redis.del(redisLockKey); // Wipe deadlocks cleanly
+    //   }
+    // });
 
     return next();
 
