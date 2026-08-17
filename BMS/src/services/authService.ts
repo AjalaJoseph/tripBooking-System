@@ -13,6 +13,7 @@ import { registerBusinessOwner,
     deActivateStaffModel
  } from "../models/userModel";
  import { accountBucketService } from "../middleware/accountBucket";
+ import { createAuditLog } from "../models/log";
  import { hashRefreshToken } from "../ultil/hashToken";
  import bcrypt from "bcrypt";
  import {redis} from "../config/redis"
@@ -39,7 +40,7 @@ export const registerBusinessOwnerService = async (data:any) =>{
 }
 
 //  business owner login service
-export const businessLoginServicve = async (email:string, password:string) =>{
+export const businessLoginServicve = async (email:string, password:string, ipAddress?:string, userAgent?:string) =>{
     const businessExist = await getBusinessAccount(email)
     if(!businessExist){
        throw Object.assign(new Error("Business not found"), {STATUS_CODES:404})
@@ -94,6 +95,15 @@ export const businessLoginServicve = async (email:string, password:string) =>{
             )  
             const refreshTokenHash = hashRefreshToken(refreshToken)     
         //  }
+        await createAuditLog({
+            event: "LOGIN_SUCCESS",
+            userId:businessExist.id,
+            ipAddress:ipAddress,
+            userAgent:userAgent,
+            metadata:{
+                role:businessExist.role
+            }
+        })
          accountBucketService.clear(businessExist.id)
             const redisKey = `refresh:${jti}`;
            await redis.set(redisKey, JSON.stringify({userId: businessExist.id, refresh:refreshTokenHash,}), "EX", 7 * 24 * 60 * 60);
@@ -149,7 +159,7 @@ export const staffRegistrationService = async (data:any)=>{
 }
 
 //  staff login service
-export const staffLoginServicve = async (email:string, password:string) =>{
+export const staffLoginServicve = async (email:string, password:string, ipAddress?:string, userAgent?:string) =>{
     const staffExist = await getStaffData(email)
     if(!staffExist){
        throw Object.assign(new Error("Staff not found"), {STATUS_CODES:404})
@@ -200,6 +210,15 @@ export const staffLoginServicve = async (email:string, password:string) =>{
          const{token:refreshToken, jti} = generateRefreshToken(staffExist.staff_email, staffExist.id, familyId,staffExist.role)
          const refreshTokenHash = hashRefreshToken(refreshToken)
     // }
+     await createAuditLog({
+            event: "LOGIN_SUCCESS",
+            userId:staffExist.id,
+            ipAddress:ipAddress,
+            userAgent:userAgent,
+            metadata:{
+                role:staffExist.role
+            }
+        })
         accountBucketService.clear(staffExist.id)
         const redisKey = `refresh:${jti}`;
         await redis.set(redisKey, JSON.stringify({userId: staffExist.id, refresh:refreshTokenHash,}), "EX",7 * 24 * 60 * 60);

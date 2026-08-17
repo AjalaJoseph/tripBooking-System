@@ -45,6 +45,7 @@ export const verifyAccessToken = async (req: Request, res: Response, next: NextF
     return next();
     
   } catch (err: any) {
+    
     // Gracefully catch validation failures or expired tokens
     if (err.name === 'TokenExpiredError') {
       return res.status(401).json({ 

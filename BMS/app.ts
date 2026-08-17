@@ -11,12 +11,16 @@ import cookiesParser from "cookie-parser"
 import { globalErrorHandler } from "./src/middleware/errorHandler";
 dotenv.config()
 export const app:Application = express()
+app.use((req, res, next) => {
+  console.log("🔥 REQUEST RECEIVED:", req.method, req.originalUrl);
+  next();
+});
 const corsConfigurationOptions: CorsOptions = {
   origin: process.env.NODE_ENV === "production" 
     ? "https://vercel.app" // Your live client website URL
     : "http://localhost:5173", 
    credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS",],
   allowedHeaders: ["Content-Type", "Authorization", "idempotency-key", "x-paystack-signature"],
   exposedHeaders: ["x-paystack-signature"],
 };

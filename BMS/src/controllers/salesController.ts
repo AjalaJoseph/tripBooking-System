@@ -13,6 +13,7 @@ import { createSalesService,
   getLatestThreeStaffSalesHistory
  } from "../services/salesService.js";
  import { countTenantSales } from "../models/midllewareMolde.js";
+ import { getTotalSalesCount } from "../services/planUsageService.js";
 export const handlePOSCheckout = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     // Extract the active cashier's user ID from their verified token guard session
@@ -169,36 +170,42 @@ export const getWeeklySalesOverview = async (req: Request, res: Response, next: 
 export const countSalesController = async (req: Request, res: Response, next: NextFunction) => {
   try {
     // 1. Extract identification context injected by your middleware pipeline
-    const { businessId } = (req as any).user;
-    const activeSub = (req as any).subscription;
+    const { id } = (req as any).user;
+    let currentSalesCount = 0;
 
-    // Guard Clause: Safety fallback if subscription data is missing from the request context
-    if (!activeSub || !activeSub.plan) {
+    const currentSales = await getTotalSalesCount(id)
+    if(!currentSales){
       return res.status(400).json({
         status: "fail",
         message: "Subscription Error: Active profile metadata session not found."
       });
     }
+      currentSalesCount= currentSales.currentSalesCount
+      const planExpire = currentSales.planExpired
+      const planName = currentSales.planName.toUpperCase();
+      
+    // const activeSub = (req as any).subscription;
 
-    let currentSalesCount = 0;
-    const planExpire = activeSub.expired_at
-    const planName = activeSub.plan.plan_name?.toUpperCase();
+    // // Guard Clause: Safety fallback if subscription data is missing from the request context
+    // if (!activeSub || !activeSub.plan) {
+     
+    // }
+
+    // let currentSalesCount = 0;
+    
 
     // 2. CONDITIONAL QUOTA TRIGGER: Track sales count bounds for capped tiers
-    if (planName === "FREE_TRIAL" || planName === "BASIC_PLAN") {
-      // Passes the business ID and the dynamic timestamp when their current billing month started
-      currentSalesCount = await countTenantSales(businessId, activeSub.start_at);
-    } else {
-      // 🛡️ UNLIMITED PLAN FALLBACK: If they are on a premium or enterprise tier, 
-      // we can optionally bypass database counting to maximize performance speeds.
-      currentSalesCount = await countTenantSales(businessId, activeSub.start_at);
-    }
+    // if (planName === "FREE_TRIAL" || planName === "BASIC_PLAN") {
+    //   currentSalesCount = await countTenantSales(businessId, activeSub.start_at);
+    // } else {
+    //   currentSalesCount = await countTenantSales(businessId, activeSub.start_at);
+    // }
 
     // 3. COMPLETE RESPONSE HANDSHAKE: Send analytics payload package to the frontend
     return res.status(200).json({
       status: "success",
       data: {
-        plan: planName,
+        plan: currentSales?.planName,
         salesUsedThisMonth: currentSalesCount,
         salesLimitAllowed: planName === "FREE_TRIAL" ? 300 : planName === "BASIC_PLAN" ? 2000 : "UNLIMITED",
         plan_expire:planExpire
@@ -206,7 +213,6 @@ export const countSalesController = async (req: Request, res: Response, next: Ne
     });
 
   } catch (error: any) {
-    // Passes any tracking errors cleanly down to your global error interceptor middleware
     return next(error);
   }
 };

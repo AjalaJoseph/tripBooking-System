@@ -33,7 +33,23 @@ export const verifyRefreshToken = async (req: Request, res: Response, next: Next
         message: "Invalid refresh token session.",
       });
     }
+    console.log("JTI:", decoded.jti);
+    console.log("FAMILY ID:", decoded.familyId);
 
+    console.log(
+      "Refresh exists:",
+      await redis.exists(`refresh:${decoded.jti}`)
+    );
+
+    console.log(
+      "Token revoked:",
+      await redis.exists(`revoked-refresh:${decoded.jti}`)
+    );
+
+    console.log(
+      "Family revoked:",
+      await redis.exists(`revoked-family:${decoded.familyId}`)
+    );
     const familyRevoked = await redis.exists(`revoked-family:${decoded.familyId}`);
 
     if (familyRevoked) {
@@ -77,6 +93,7 @@ export const verifyRefreshToken = async (req: Request, res: Response, next: Next
       });
     }
 
+    
     const session = JSON.parse(cachedToken);
     const incomingHash = hashRefreshToken(refreshToken);
     if (session.refresh !== incomingHash) {

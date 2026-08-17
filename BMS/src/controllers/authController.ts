@@ -45,9 +45,10 @@ export const registerBusinessOwnerController = async (req:Request,res:Response, 
 
 export const handleBusinessLogin = async (req: Request, res: Response, next: NextFunction) => {
   const { email, password } = req.body;
-
+  const ipAddress = req.ip
+  const userAgent = req.get("user-agent")
   try {
-    const result = await businessLoginServicve(email, password);
+    const result = await businessLoginServicve(email, password,ipAddress, userAgent);
 
     // 🔒 Cookie Security: Save the refresh token inside a secure HttpOnly block
     res.cookie("refreshToken", result.refreshToken, {
@@ -95,9 +96,10 @@ export const staffRegistrationController = async (req:Request, res:Response, nex
 //  staff login controller 
 export const handleStaffLogin = async (req: Request, res: Response, next: NextFunction) => {
   const { email, password } = req.body;
-
+  const ipAddress = req.ip
+  const userAgent = req.get("user-agent")
   try {
-    const result = await staffLoginServicve(email, password);
+    const result = await staffLoginServicve(email, password,ipAddress,userAgent);
 
     // 🔒 Cookie Security: Save the refresh token inside a secure HttpOnly block
     res.cookie("refreshToken", result.refreshToken, {
@@ -196,7 +198,6 @@ export const handleGetAllStaff = async (req: Request, res: Response, next: NextF
   try {
     // Extract the businessId safely from the verified verifyAccessToken token payload
     const { id } = (req as any).user;
-    console.log(id)
     const staffList = await getAllStaffService(id);
 
     return res.status(200).json({
@@ -418,8 +419,10 @@ export const refreshTokenController = async(req:Request, res:Response, next:Next
   try{
     const {email, id, role, jti:oldJti, familyId} = (req as any).user
         const newAccessToken =await generateAccessToken(email, id, role)
+        
        const newRefreshToken = await refrsehTokenRotationService(email, id, role, oldJti, familyId)
-        res.cookie("refreshToken", newRefreshToken, {
+      
+       res.cookie("refreshToken", newRefreshToken, {
           httpOnly: true,
           secure: process.env.NODE_ENV === "production",
           sameSite: "strict",

@@ -45,5 +45,5 @@ authRouter.post("/forgot-password",authRateLimiter, ValidateForgotPasswordEmail,
 authRouter.post("/reset-password", ValidateResetPasswordInput, resetPasswordController)
 authRouter.post("/reset-password/owner", ValidateResetPasswordInput, resetBusinessOwnerPasswordController)
 authRouter.post("/resend-otp", handleResendForgotPasswordOTP)
-authRouter.get("/subscription/usage", verifyAccessToken, checkSubscriptionActive, countSalesController)
+authRouter.get("/subscription/usage", verifyAccessToken, countSalesController)
 authRouter.patch("/:staffId/toggle-status", verifyAccessToken, handleDeActivateStaff)
