@@ -9,7 +9,7 @@ dotenv.config();
 export const verifyRefreshToken = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { refreshToken } = req.cookies;
-    // console.log(refreshToken)
+     console.log(refreshToken)
     const refreshKey = process.env.REFRESH_SECRET;
       if (!refreshKey) {
           throw new Error("REFRESH_SECRET is not configured");
