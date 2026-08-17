@@ -419,10 +419,11 @@ export const refreshTokenController = async(req:Request, res:Response, next:Next
   try{
     const {email, id, role, jti:oldJti, familyId} = (req as any).user
         const newAccessToken =await generateAccessToken(email, id, role)
-        
        const newRefreshToken = await refrsehTokenRotationService(email, id, role, oldJti, familyId)
+      console.log("accessToken", newAccessToken)
+      console.log("refresh Token ", newRefreshToken)
       
-       res.cookie("refreshToken", newRefreshToken, {
+       res.cookie("refreshToken", newRefreshToken.refreshToken, {
           httpOnly: true,
           secure: process.env.NODE_ENV === "production",
           sameSite: "strict",

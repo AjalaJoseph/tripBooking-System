@@ -9,6 +9,7 @@ dotenv.config();
 export const verifyRefreshToken = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { refreshToken } = req.cookies;
+    // console.log(refreshToken)
     const refreshKey = process.env.REFRESH_SECRET;
       if (!refreshKey) {
           throw new Error("REFRESH_SECRET is not configured");
@@ -27,14 +28,14 @@ export const verifyRefreshToken = async (req: Request, res: Response, next: Next
       familyId:string;
       exp: number;
     };
-    if (!decoded.jti || decoded.familyId) {
+
+    if (!decoded.jti || !decoded.familyId) {
       return res.status(403).json({
         status: "fail",
         message: "Invalid refresh token session.",
       });
     }
-    console.log("JTI:", decoded.jti);
-    console.log("FAMILY ID:", decoded.familyId);
+   
 
     console.log(
       "Refresh exists:",

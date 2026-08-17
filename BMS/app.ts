@@ -11,10 +11,10 @@ import cookiesParser from "cookie-parser"
 import { globalErrorHandler } from "./src/middleware/errorHandler";
 dotenv.config()
 export const app:Application = express()
-app.use((req, res, next) => {
-  console.log("🔥 REQUEST RECEIVED:", req.method, req.originalUrl);
-  next();
-});
+// app.use((req, res, next) => {
+//   console.log("🔥 REQUEST RECEIVED:", req.method, req.originalUrl);
+//   next();
+// });
 const corsConfigurationOptions: CorsOptions = {
   origin: process.env.NODE_ENV === "production" 
     ? "https://vercel.app" // Your live client website URL
