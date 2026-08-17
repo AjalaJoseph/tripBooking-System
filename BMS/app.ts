@@ -2,11 +2,14 @@ import express, { Application } from "express";
 import dotenv from "dotenv"
 import cors, { CorsOptions } from "cors";
 import helmet from "helmet"
+import { httpMetrics } from "./src/middleware/httpMetrics";
 import { authRouter } from "./src/routes/authRouter";
 import { productRouter } from "./src/routes/productRouter";
 import { saleRouter } from "./src/routes/salesRouter";
 import { reportRouter } from "./src/routes/reportRouter";
 import { subscriptionRouter } from "./src/routes/subscriptionRoute";
+import healthRouter from "./src/routes/healthRoute";
+import metricsRoute from "./src/routes/metricsRoute";
 import cookiesParser from "cookie-parser"
 import { globalErrorHandler } from "./src/middleware/errorHandler";
 dotenv.config()
@@ -31,6 +34,7 @@ app.use(helmet({
 app.use(cors(corsConfigurationOptions))
 app.use(cookiesParser())
 app.use(express.json());
+app.use(httpMetrics);
 app.use(express.urlencoded({ extended: true }));
 
 app.use('/api/auth', authRouter)
@@ -38,4 +42,6 @@ app.use('/api', productRouter)
 app.use("/api/sales", saleRouter)
 app.use("/api", reportRouter)
 app.use("/api", subscriptionRouter)
+app.use("/api", healthRouter)
+app.use("/api", metricsRoute)
 app.use(globalErrorHandler)

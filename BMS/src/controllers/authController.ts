@@ -14,7 +14,7 @@ import { registerBusinessOwnerService,
     resetPasswordService,
     resetBusinessOwnerPasswordService,
     deActivateStaffService,
-    refrsehTokenRotationService
+    refreshTokenRotationService
  } from "../services/authService"
 
 import jwt from "jsonwebtoken";
@@ -237,8 +237,10 @@ export const handleStaffProfileUpdateController = async (req:Request, res:Respon
 export const handleDeleteStaff = async (req:Request, res:Response, next:NextFunction) =>{
   try{
     const {id} = (req as any).user
+    const ipAddress = req.ip
+        const userAgent = req.get("user-agent")
     const { staffId} = req.params
-    await deleteStaffService(id, staffId)
+    await deleteStaffService(id, staffId, ipAddress,userAgent)
     return res.status(200).json({
       status:"success",
       message:"staff deleted succesfully"
@@ -252,8 +254,10 @@ export const handleDeleteStaff = async (req:Request, res:Response, next:NextFunc
 export const handleDeActivateStaff = async (req:Request, res:Response, next:NextFunction) =>{
   try{
     const {id} = (req as any).user
+    const ipAddress = req.ip
+        const userAgent = req.get("user-agent")
     const { staffId} = req.params
-    await deActivateStaffService(id, staffId)
+    await deActivateStaffService(id, staffId, ipAddress,userAgent)
     return res.status(200).json({
       status:"success",
       message:"staff status update successful"
@@ -391,7 +395,9 @@ export const handleResendForgotPasswordOTP = async (req: Request, res: Response,
 export const resetPasswordController = async (req:Request, res:Response, next:NextFunction) =>{
     try{
         const {otpCode, new_password} = req.body
-        await resetPasswordService(otpCode,new_password)
+         const ipAddress = req.ip
+        const userAgent = req.get("user-agent")
+        await resetPasswordService(otpCode,new_password, ipAddress, userAgent)
         return res.status(200).json({
             status: "success",
             message: "Password updated successfully. You can now securely log back in."
@@ -419,10 +425,8 @@ export const refreshTokenController = async(req:Request, res:Response, next:Next
   try{
     const {email, id, role, jti:oldJti, familyId} = (req as any).user
         const newAccessToken =await generateAccessToken(email, id, role)
-       const newRefreshToken = await refrsehTokenRotationService(email, id, role, oldJti, familyId)
-      console.log("accessToken", newAccessToken)
-      console.log("refresh Token ", newRefreshToken)
-      
+       const newRefreshToken = await refreshTokenRotationService(email, id, role, oldJti, familyId) 
+        //  console.log("accessToken", newAccessToken)
        res.cookie("refreshToken", newRefreshToken.refreshToken, {
           httpOnly: true,
           secure: process.env.NODE_ENV === "production",

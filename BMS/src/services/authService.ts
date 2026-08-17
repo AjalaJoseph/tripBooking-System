@@ -43,6 +43,16 @@ export const registerBusinessOwnerService = async (data:any) =>{
 export const businessLoginServicve = async (email:string, password:string, ipAddress?:string, userAgent?:string) =>{
     const businessExist = await getBusinessAccount(email)
     if(!businessExist){
+         await createAuditLog({
+            event: "LOGIN_FAILED",
+            ipAddress:ipAddress,
+            userAgent:userAgent,
+            metadata: {
+            reason: "USER_NOT_FOUND",
+            email,
+            },
+         });
+
        throw Object.assign(new Error("Business not found"), {STATUS_CODES:404})
     }
     const account = await accountBucketService.isBlocked(businessExist.id);
@@ -63,6 +73,17 @@ export const businessLoginServicve = async (email:string, password:string, ipAdd
         const result = await accountBucketService.recordFailure(businessExist.id);
 
         if (result.blocked) {
+             await createAuditLog({
+            event: "ACCOUNT_LOCKED",
+            userId: businessExist.id,
+            ipAddress:ipAddress,
+            userAgent:userAgent,
+            metadata: {
+            reason: "TOO_MANY_FAILED_LOGIN_ATTEMPTS",
+            attempts: result.attempts,
+            failureWindow: "15 minutes",
+            },
+        });
             throw Object.assign(new Error("Too many failed login attempts. Please wait until the account is unlocked."),
             { STATUS_CODES: 429, retryAfter:900 }
             );
@@ -74,6 +95,16 @@ export const businessLoginServicve = async (email:string, password:string, ipAdd
             { STATUS_CODES: 400 }
             );
         }
+            await createAuditLog({
+                event: "LOGIN_FAILED",
+                userId: businessExist.id,
+                ipAddress:ipAddress,
+                userAgent:userAgent,
+                metadata: {
+                reason: "INVALID_PASSWORD",
+                email,
+                },
+            });
 
         throw Object.assign(new Error("Invalid credentials."),{ STATUS_CODES: 400 });
         }
@@ -162,6 +193,15 @@ export const staffRegistrationService = async (data:any)=>{
 export const staffLoginServicve = async (email:string, password:string, ipAddress?:string, userAgent?:string) =>{
     const staffExist = await getStaffData(email)
     if(!staffExist){
+         await createAuditLog({
+            event: "LOGIN_FAILED",
+            ipAddress:ipAddress,
+            userAgent:userAgent,
+            metadata: {
+            reason: "USER_NOT_FOUND",
+            email,
+            },
+         });
        throw Object.assign(new Error("Staff not found"), {STATUS_CODES:404})
     }
 
@@ -183,6 +223,17 @@ export const staffLoginServicve = async (email:string, password:string, ipAddres
         const result = await accountBucketService.recordFailure(staffExist.id);
 
         if (result.blocked) {
+             await createAuditLog({
+                event: "ACCOUNT_LOGIN_BLOCKED",
+                userId: staffExist.id,
+                ipAddress:ipAddress,
+                userAgent :userAgent,
+                metadata: {
+                reason: "TOO_MANY_FAILED_LOGIN_ATTEMPTS",
+                attempts: result.attempts,
+                failureWindow: "15 minutes",
+                },
+            });
             throw Object.assign(new Error("Too many failed login attempts. Please wait until the account is unlocked."),
             { STATUS_CODES: 429, retryAfter:900 }
             );
@@ -196,6 +247,16 @@ export const staffLoginServicve = async (email:string, password:string, ipAddres
             { STATUS_CODES: 400 }
             );
         }
+        await createAuditLog({
+            event: "LOGIN_FAILED",
+            userId: staffExist.id,
+            ipAddress:ipAddress,
+            userAgent:userAgent,
+            metadata: {
+            reason: "INVALID_PASSWORD",
+            email,
+            },
+        });
 
         throw Object.assign(
             new Error("Invalid credentials."),
@@ -275,22 +336,46 @@ export const editStaffProfileService = async (businessId:string, staff_id:any, u
 }
 
 //  delete staff register by business owner service 
- export const deleteStaffService = async (business_id:string, staff_id:any) =>{
+ export const deleteStaffService = async (business_id:string, staff_id:any, ipAddress?:string, userAgent?:string) =>{
     const checkStaffExist = await checkStaff(staff_id, business_id)
     if(!checkStaffExist){
         throw Object.assign(new Error("Unauthorized: Staff profile not found or does not belong to your store directory."), {STATUS_CODES:404})
     }
-    return await deleteStaff(staff_id)
+    const removeStaff = await deleteStaff(staff_id)
+    await createAuditLog({
+        event: "STAFF_REMOVED",
+        userId: staff_id,
+        ipAddress: ipAddress,
+        userAgent: userAgent,
+        metadata: {
+            staffId: staff_id,
+            staffEmail: removeStaff.staff_email,
+            staffName: removeStaff.staff_name,
+            remove_by:business_id
+        },
+    });
+    return removeStaff
  }
 
 //   deActivate staff service
- export const deActivateStaffService = async (business_id:string, staff_id:any) =>{
+ export const deActivateStaffService = async (business_id:string, staff_id:any, ipAddress?:string, userAgent?:string) =>{
     const checkStaffExist = await checkStaff(staff_id, business_id)
     if(!checkStaffExist){
         throw Object.assign(new Error("Unauthorized: Staff profile not found or does not belong to your store directory."), {STATUS_CODES:404})
     }
     const nextStaffStatus = !checkStaffExist.isActive;
-    return await deActivateStaffModel(staff_id, business_id,nextStaffStatus)
+    const deactivateStaff = await deActivateStaffModel(staff_id, business_id,nextStaffStatus)
+     await createAuditLog({
+    event: nextStaffStatus? "STAFF_REACTIVATED" : "STAFF_SUSPENDED",
+    userId: business_id,
+    ipAddress: ipAddress,
+    userAgent: userAgent,
+    metadata: {
+      staffId: staff_id,
+      businessId: business_id,
+    },
+  });
+    return deactivateStaff
  }
 //   get staff account data
 export const staffProfile = async (email:string) =>{
@@ -349,7 +434,7 @@ export const forgotPasswordService = async (email: string) => {
   return { status: "success", sessionId:sessionId, message: "Verification token dispatched to registered inbox." };
 };
 //  staff reset password service
-export const resetPasswordService = async (otpCode :string, password:string) =>{
+export const resetPasswordService = async (otpCode :string, password:string, ipAddress?:string, userAgent?:string) =>{
      const redisOtpTrackingKey = `password_reset_code:${otpCode}`;
   const cachedData = await redis.get(redisOtpTrackingKey);
   if (!cachedData) {
@@ -363,6 +448,16 @@ export const resetPasswordService = async (otpCode :string, password:string) =>{
         const newHashPasword = await bcrypt.hash(password, 12)
          const newPassword = await businessOwnerResetPassword(email, newHashPasword)
           await redis.del(redisOtpTrackingKey);
+          await createAuditLog({
+            event: "PASSWORD_RESET",
+            userId: newPassword.id,
+            ipAddress: ipAddress,
+            userAgent:userAgent,
+            metadata: {
+                method: "FORGOT_PASSWORD",
+                email
+            },
+            });
          return newPassword
       };
 
@@ -370,6 +465,16 @@ export const resetPasswordService = async (otpCode :string, password:string) =>{
         const newHashPasword = await bcrypt.hash(password, 12)
          const newPassword = await staffResetPassword(email, newHashPasword)
           await redis.del(redisOtpTrackingKey);
+           await createAuditLog({
+            event: "PASSWORD_RESET",
+            userId: newPassword.id,
+            ipAddress: ipAddress,
+            userAgent:userAgent,
+            metadata: {
+                method: "FORGOT_PASSWORD",
+                email
+            },
+            });
          return newPassword
       } 
 }
@@ -389,7 +494,7 @@ export const resetBusinessOwnerPasswordService = async (otpCode :string, passwor
 }
 
 // refresh token rotation service 
-export const refrsehTokenRotationService = async (email:string, id:string, role:string, oldJti:string, familyId:string) =>{
+export const refreshTokenRotationService = async (email:string, id:string, role:string, oldJti:string, familyId:string) =>{
     const oldRefreshKey = `refresh:${oldJti}`;
      const revokedKey = `revoked-refresh:${oldJti}`;
      const REFRESH_TOKEN_TTL = 7 * 24 * 60 * 60;

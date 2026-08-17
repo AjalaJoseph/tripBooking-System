@@ -4,12 +4,12 @@ import dotenv from "dotenv";
 import { redis } from "../config/redis";
 import { hashRefreshToken } from "../ultil/hashToken";
 import { revokeRefreshTokenFamily } from "../ultil/revokedUserSession";
+import { createAuditLog } from "../models/log";
 dotenv.config();
 
 export const verifyRefreshToken = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { refreshToken } = req.cookies;
-     console.log(refreshToken)
     const refreshKey = process.env.REFRESH_SECRET;
       if (!refreshKey) {
           throw new Error("REFRESH_SECRET is not configured");
@@ -17,7 +17,7 @@ export const verifyRefreshToken = async (req: Request, res: Response, next: Next
     if (!refreshToken) {
       return res.status(401).json({ 
         status: "fail", 
-        message: "Authentication Failure: Refresh token token cookie is missing." 
+        message: "Authentication Failure: Refresh token  cookie is missing." 
       });
     }
     const decoded = jwt.verify(refreshToken, refreshKey) as {
@@ -36,21 +36,6 @@ export const verifyRefreshToken = async (req: Request, res: Response, next: Next
       });
     }
    
-
-    console.log(
-      "Refresh exists:",
-      await redis.exists(`refresh:${decoded.jti}`)
-    );
-
-    console.log(
-      "Token revoked:",
-      await redis.exists(`revoked-refresh:${decoded.jti}`)
-    );
-
-    console.log(
-      "Family revoked:",
-      await redis.exists(`revoked-family:${decoded.familyId}`)
-    );
     const familyRevoked = await redis.exists(`revoked-family:${decoded.familyId}`);
 
     if (familyRevoked) {
@@ -80,6 +65,17 @@ export const verifyRefreshToken = async (req: Request, res: Response, next: Next
             }
             console.warn(`Refresh token reuse detected for user ${decoded.id}, family ${familyId}` );
             await revokeRefreshTokenFamily(familyId);
+             await createAuditLog({
+                event: "REFRESH_TOKEN_REUSE_DETECTED",
+                userId: decoded.id,
+                ipAddress: req.ip,
+                userAgent: req.get("user-agent") ?? undefined,
+                metadata: {
+                  jti: decoded.jti,
+                  familyId:familyId,
+                  reason: reason ?? "REVOKED_REFRESH_TOKEN_REUSED",
+                },
+            });
             // 🚨 REFRESH TOKEN REUSE DETECTED
             return res.status(403).json({
               status: "fail",
