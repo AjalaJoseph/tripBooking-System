@@ -176,7 +176,16 @@ export const handleDownloadReportPDF = async (req: Request, res: Response, next:
     }
 
     const activeSub = await getActiveSubscription(id)
-     if (activeSub?.plan?.plan_name === "BASIC_PLAN") {
+    const currentDate = new Date()
+    if (!activeSub || new Date(activeSub.expired_at) < currentDate) {
+      res.status(403).json({
+        status: "fail",
+        code: "SUBSCRIPTION_EXPIRED",
+        message: "Access Denied: Your subscription has expired. Please renew your plan to continue using terminal extraction utilities."
+      });
+      return;
+    }
+     if (activeSub?.plan?.plan_name === "BASIC_PLAN" ) {
       res.status(403).json({
         status: "fail",
         code: "PREMIUM_FEATURE_LOCKED",

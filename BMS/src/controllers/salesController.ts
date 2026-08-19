@@ -12,17 +12,15 @@ import { createSalesService,
   getTopStaffRevenueService,
   getLatestThreeStaffSalesHistory
  } from "../services/salesService.js";
- import { countTenantSales } from "../models/midllewareMolde.js";
+//  import { countTenantSales } from "../models/midllewareMolde.js";
+import { salesTransactionCounter } from "../monitoring/metrics.js";
  import { getTotalSalesCount } from "../services/planUsageService.js";
 export const handlePOSCheckout = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-  try {
-    // Extract the active cashier's user ID from their verified token guard session
-    const { id } = (req as any).user;
-    // Pull the products list array and payment format sent by your frontend dashboard layout
-    const { items, payment_method } = req.body;
-
-    // Execute your high-speed array processing checkout service layer
+ const { items, payment_method } = req.body;
+  const { id } = (req as any).user;
+ try {
     const completedInvoice = await createSalesService(id, payment_method, items);
+     salesTransactionCounter.inc({ payment_method: payment_method, status: "success" });
     res.status(201).json({
       status: "success",
       message: "Transaction compiled and logged successfully. Invoice generated.",
@@ -30,6 +28,7 @@ export const handlePOSCheckout = async (req: Request, res: Response, next: NextF
     });
 
   } catch (error) {
+    salesTransactionCounter.inc({ payment_method: payment_method, status: "failed" });
     return next(error); // Route to globalErrorHandler middleware cleanly
   }
 };

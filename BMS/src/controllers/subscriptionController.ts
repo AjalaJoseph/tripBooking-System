@@ -2,9 +2,10 @@ import { Request, Response, NextFunction } from "express";
 import axios from "axios"
 import crypto from "crypto";
 import dotenv from "dotenv"
+import { logger } from "../config/logger";
 import { getPaymentService, updateSubscriptionService } from "../services/subscriptionService";
 dotenv.config()
-const PAYSTACK_KEY = process.env.PAYSTACK_SECRET_KEY || " "
+const PAYSTACK_KEY = process.env.PAYSTACK_TEST_KEY || " "
 export const handleInitializeSubscriptionPayment = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try{
         
@@ -60,16 +61,12 @@ export const handleInitializeSubscriptionPayment = async (req: Request, res: Res
 
 export const handlePaystackWebhookSettlement = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    console.log("📋 COMPLETE LIST OF HEADERS RECEIVED BY YOUR ENDPOINT:");
-    console.log(req.headers); 
-    // 🔒 CYBERSECURITY SIGNATURE MATCH: Enforce hash check to block hacker fakes
-     const incomingSignature = req.headers['x-paystack-signature'] as string;
+    logger.info("📋 COMPLETE LIST OF HEADERS RECEIVED BY YOUR ENDPOINT:");
+    const incomingSignature = req.headers['x-paystack-signature'] as string;
     const rawPayloadText = (req as any).rawBody;
-
-    console.log("🛰️ [Incoming Webhook Signature]:", incomingSignature);
-
-    if (!rawPayloadText) {
-      res.status(400).json({ status: "fail", message: "Bad Request: Missing raw string request payload context." });
+    logger.info(rawPayloadText)
+    if (!rawPayloadText || !incomingSignature) {
+      res.status(400).json({ status: "fail", message: "Bad Request: Missing cryptographic payload context vectors." });
       return;
     }
      const computedHash = crypto
@@ -78,53 +75,53 @@ export const handlePaystackWebhookSettlement = async (req: Request, res: Respons
       .digest("hex");
 
     if (incomingSignature !== computedHash) {
-      console.log("❌ [Cybersecurity Alert]: Encryption signatures do not match! Dropping packet.");
-      res.status(401).json({ status: "fail", message: "Unauthorized: Signature payload mismatch." });
+      logger.warn("❌ [SECURITY ALERT]: Verification signature payload mismatch! Dropping packet.");
+      res.status(401).json({ status: "fail", message: "Unauthorized: Invalid signature origin source." });
       return;
     }
-
-    if (incomingSignature !== computedHash) {
-      res.status(401).json({ status: "fail", message: "Unauthorized: Signature payload mismatch." });
-      return;
-    }
-
     const eventPayload = req.body;
     console.log(eventPayload)
     // Check if credit card charge cleared successfully on Paystack network nodes
-    if (eventPayload.event === "charge.success") {
-      console.log(`💰 [Paystack Webhook Alert]: Intercepted successful charge event token.`);
-      // console.log(eventPayload.event)
-      // Trigger your decoupled service layer pass-through pipeline smoothly
-    //   await processWebhookUpgradeService(eventPayload.data);
-    }
-
-    // Paystack strictly mandates returning an immediate HTTP 200 response string line
-    // const eventPayload = req.body;
-    // console.log("🛰️ [Incoming Webhook Payload Captured]:", eventPayload);
-
-    // 🛡️ THE TRAFFIC GUARD FALLBACK: If a rogue client or test script accidentally hits this path with raw initializing metadata
     if (eventPayload && eventPayload.plan_name && !eventPayload.event) {
-      console.log("⚠️ [Routing Lane Collision]: Your frontend/test script is hitting the WEBHOOK path instead of the SUBSCRIBE path.");
+      logger.warn("⚠️ [Routing Lane Collision]: Frontend/test script hit webhook route instead of subscribe path.");
       res.status(400).json({
         status: "fail",
         message: "Incorrect Endpoint Configuration: Please target /api/subscribe for plan selections, not the webhook route."
       });
-      return;
+      return; // 🔥 Explicitly halts execution instantly!
     }
 
-    // 🚀 Check if the incoming payload is an authentic Paystack system event notification token
     if (eventPayload && eventPayload.event === "charge.success") {
-      console.log(`💰 [Paystack Webhook Alert]: Intercepted authentic successful card charge event token.`);
-      
-      // Extract values cleanly using standard Paystack JSON schema properties
-      const { businessId, plan_name, plan_price } = eventPayload.data.metadata;
-      const gatewayReference = eventPayload.data.reference;
-      
-      // Convert Kobo value parameter back to standard primitive currency string units (e.g. 500000 / 100 = "5000.00")
-      const totalAmountPaidInNaira = (eventPayload.data.amount / 100).toString();
+      logger.info(`💰 [Paystack Webhook Success]: Intercepted authentic card charge token.`);
 
-      console.log(`🆙 [BizFlow Billing]: Activating data service layers pipelines for business [${businessId}]...`);
+      const transactionData = eventPayload.data;
+      
+      // 🎯 THE ANTI-CRASH FIX: Explicitly safe-guard metadata targets to prevent undefined crashes [S4]
+      const metadata = transactionData?.metadata || {};
+      const businessId = metadata.businessId || metadata.business_id;
+      const planName = metadata.plan_name || "PRO_GROWTH_PLAN";
+      
+      const gatewayReference = transactionData?.reference;
+      
+      // Convert Kobo parameter integers back to Naira floating decimal values smoothly (e.g. 500000 -> 5000.00) [S4]
+      const rawAmount = Number(transactionData?.amount || 0);
+      const totalAmountPaidInNaira = (rawAmount / 100).toFixed(2);
+
+      if (!businessId) {
+        logger.warn(`ℹ️ Webhook Acknowledged: Payment cleared but ignored due to missing business metadata context.`);
+        res.status(200).send("Webhook Handled Cleanly (No business metadata available).");
+        return;
+      }
+
+      logger.info(`🆙 [BizFlow Billing]: Activating data service layers for business profile [${businessId}]...`);
+      logger.info(`💸 Summary: Verified receipt reference #${gatewayReference} tracking a sum value of ₦${totalAmountPaidInNaira} for plan [${planName}].`);
+
+      // =========================================================================
+      // 🗄️ PLACE YOUR PRISMA/SERVICE DATABASE UPGRADE LOGIC DIRECTLY HERE:
+      // =========================================================================
+      // await processWebhookUpgradeService(businessId, planName, totalAmountPaidInNaira);
     }
+
     res.status(200).send("Webhook Handled Cleanly.");
 
   } catch (error) {

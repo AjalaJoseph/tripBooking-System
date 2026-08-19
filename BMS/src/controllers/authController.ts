@@ -20,7 +20,9 @@ import { registerBusinessOwnerService,
 import jwt from "jsonwebtoken";
  import { redis } from "../config/redis"
  import dotenv from "dotenv"
-import { generateAccessToken, generateRefreshToken } from "../ultil/generateToken"
+import { generateAccessToken} from "../ultil/generateToken"
+import { tokenRotationCounter } from "../monitoring/metrics";
+import { revokeAllUserTokenSessions } from "../middleware/verifyRefreshToken";
 dotenv.config()
  const recoverySecret = process.env.REFRESH_SECRET || " ";
 export const registerBusinessOwnerController = async (req:Request,res:Response, next:NextFunction) =>{
@@ -131,8 +133,7 @@ export const logoutController = async (req: Request, res: Response, next: NextFu
     const accessToken = authHeader && authHeader.split(' ')[1]; 
 
     const tokenExp = (req as any).user.exp;
-    //  console.log(tokenExp)
-    // 1. 🛡️ BLACKLIST ACCESS TOKEN IN FAST RAM CACHE LAYER
+  
     if (accessToken && tokenExp) {
       const currentTime = Math.floor(Date.now() / 1000);
       const remainingTime = tokenExp - currentTime;
@@ -179,9 +180,10 @@ export const logoutController = async (req: Request, res: Response, next: NextFu
 //  update staff password controller
 export const updateStaffPasswordController = async (req:Request, res:Response, next:NextFunction) =>{
   try{
-    const {email}= (req as any).user
+    const {id, email}= (req as any).user
     const {new_password} = req.body
     const updatePassword = await updateStaffPasswordService(email,new_password)
+    await revokeAllUserTokenSessions(id)
     return res.status(201).json({
       status:"success",
       message:"password update successful!",
@@ -434,6 +436,7 @@ export const refreshTokenController = async(req:Request, res:Response, next:Next
           maxAge: 7 * 24 * 60 * 60 * 1000,
           path: "/",
         });
+        tokenRotationCounter.inc({ status: "success", breach_detected: "false" });
         res.status(200).json({
             status: "success",
             message: "Access token  rotation executed successfully.",
@@ -441,6 +444,7 @@ export const refreshTokenController = async(req:Request, res:Response, next:Next
         });
         return;
   }catch(error){
+    tokenRotationCounter.inc({ status: "error", breach_detected: "false" });
     return next(error)
   }
 }

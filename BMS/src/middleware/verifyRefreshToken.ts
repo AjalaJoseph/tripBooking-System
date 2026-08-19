@@ -4,7 +4,9 @@ import dotenv from "dotenv";
 import { redis } from "../config/redis";
 import { hashRefreshToken } from "../ultil/hashToken";
 import { revokeRefreshTokenFamily } from "../ultil/revokedUserSession";
+import { tokenRotationCounter } from "../monitoring/metrics";
 import { createAuditLog } from "../models/log";
+import { match } from "node:assert";
 dotenv.config();
 
 export const verifyRefreshToken = async (req: Request, res: Response, next: NextFunction) => {
@@ -15,6 +17,7 @@ export const verifyRefreshToken = async (req: Request, res: Response, next: Next
           throw new Error("REFRESH_SECRET is not configured");
         }
     if (!refreshToken) {
+      tokenRotationCounter.inc({ status: "failed", breach_detected: "false" });
       return res.status(401).json({ 
         status: "fail", 
         message: "Authentication Failure: Refresh token  cookie is missing." 
@@ -65,6 +68,7 @@ export const verifyRefreshToken = async (req: Request, res: Response, next: Next
             }
             console.warn(`Refresh token reuse detected for user ${decoded.id}, family ${familyId}` );
             await revokeRefreshTokenFamily(familyId);
+            tokenRotationCounter.inc({ status: "revoked_reuse", breach_detected: "true" });
              await createAuditLog({
                 event: "REFRESH_TOKEN_REUSE_DETECTED",
                 userId: decoded.id,
@@ -125,3 +129,50 @@ export const verifyRefreshToken = async (req: Request, res: Response, next: Next
     });
   }
 };
+
+
+
+// revokeallusersession and token when user update is password
+export const revokeAllUserTokenSessions = async (userId:string) =>{
+  let cursor = "0"
+    const families = new Set<string>();
+  do{
+     const [nextCursor, keys] = await redis.scan(
+      cursor,
+      "MATCH",
+      "refresh:*",
+      "COUNT",
+      "100"
+    );
+
+    cursor = nextCursor;
+  for (const key of keys) {
+      const cachedToken = await redis.get(key);
+      if (!cachedToken) {
+        continue;
+      }
+
+      try {
+        const decoded = jwt.decode(cachedToken) as {
+          id?: string;
+          familyId?: string;
+          jti?: string;
+        } | null;
+
+        if ( decoded?.id === userId && decoded.familyId) {
+          families.add(decoded.familyId);
+        }
+      } catch {
+        // Ignore invalid refresh token data
+      }
+    }
+  } while (cursor !== "0");
+  for (const familyId of families) {
+    await revokeRefreshTokenFamily(familyId);
+  }
+  return {
+    userId,
+    familiesRevoked: families.size,
+  };
+
+  }
