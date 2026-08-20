@@ -33,7 +33,15 @@ app.use(helmet({
 }));
 app.use(cors(corsConfigurationOptions))
 app.use(cookiesParser())
-app.use(express.json());
+app.use(express.json({
+  verify: (req: any, res, buf) => {
+    // Looks for your webhook endpoint signature path string
+    if (req.originalUrl && req.originalUrl.includes('subscribe-webhook')) {
+      req.rawBody = buf.toString('utf-8'); 
+      // console.log("🛰️ [Raw Body Interceptor]: Raw string buffer captured flawlessly.");
+    }
+  }
+}));
 app.use(httpMetrics);
 app.use(express.urlencoded({ extended: true }));
 

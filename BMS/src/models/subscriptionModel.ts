@@ -2,9 +2,10 @@ import crypto from "crypto"
 import { prisma } from "../config/db";
 export const updateSubscription = async (data: any) =>{
    return await prisma.$transaction(async(tx) =>{
+
         const updateSubscriptionData = await tx.subscription.upsert({
                 where: {
-                    id: data.businessId 
+                    business_id:data.businessId 
                 },
                 update: {
                     start_at:   data.start_at,
@@ -12,7 +13,6 @@ export const updateSubscription = async (data: any) =>{
                     expired_at: data.expired_at,
                 },
                 create: {
-                    id:          data.businessId,
                     business_id: data.businessId,
                     // Fallback placeholder ID link string variable block if creating from raw scratch template profiles
                     plan_id:     crypto.randomUUID(), 

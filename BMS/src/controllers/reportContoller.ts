@@ -189,7 +189,7 @@ export const handleDownloadReportPDF = async (req: Request, res: Response, next:
       res.status(403).json({
         status: "fail",
         code: "PREMIUM_FEATURE_LOCKED",
-        message: "Feature Locked: Spreadsheet downloads are not included in the Basic Plan. Please upgrade to the Pro Growth Plan to unlock data extraction tools."
+        message: "Feature Locked: Report downloads are not included in the Basic Plan. Please upgrade to the Pro Plan to unlock data extraction tools."
       });
       return; // Halts the pipeline instantly before any BullMQ jobs or file scripts fire!
     }

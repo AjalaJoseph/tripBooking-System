@@ -3,6 +3,7 @@ import axios from "axios"
 import crypto from "crypto";
 import dotenv from "dotenv"
 import { logger } from "../config/logger";
+import { runWithPaystackBreaker } from "../ultil/paystackBreaker";
 import { getPaymentService, updateSubscriptionService } from "../services/subscriptionService";
 dotenv.config()
 const PAYSTACK_KEY = process.env.PAYSTACK_TEST_KEY || " "
@@ -33,15 +34,19 @@ export const handleInitializeSubscriptionPayment = async (req: Request, res: Res
               plan_price: amountInKobo
             }
          }
-         const paystackResponse = await axios.post("https://api.paystack.co/transaction/initialize",
-            PaystackPayload,
-             {
+        const paystackResponse = await runWithPaystackBreaker(() =>
+            axios.post("https://api.paystack.co/transaction/initialize",
+              PaystackPayload,
+              {
                 headers: {
-                Authorization: `Bearer ${PAYSTACK_KEY}`, // Your secret key variable loaded from your .env file
-                "Content-Type": "application/json"
-                }
-            }
-          )
+                  Authorization: `Bearer ${PAYSTACK_KEY}`,
+                  "Content-Type": "application/json",
+                },
+                timeout: 5000,
+              }
+            )
+          );
+          
           if (paystackResponse.data && paystackResponse.data.status === true) {
                 res.status(200).json({
                     status: "success",
@@ -64,7 +69,6 @@ export const handlePaystackWebhookSettlement = async (req: Request, res: Respons
     logger.info("📋 COMPLETE LIST OF HEADERS RECEIVED BY YOUR ENDPOINT:");
     const incomingSignature = req.headers['x-paystack-signature'] as string;
     const rawPayloadText = (req as any).rawBody;
-    logger.info(rawPayloadText)
     if (!rawPayloadText || !incomingSignature) {
       res.status(400).json({ status: "fail", message: "Bad Request: Missing cryptographic payload context vectors." });
       return;
@@ -80,7 +84,6 @@ export const handlePaystackWebhookSettlement = async (req: Request, res: Respons
       return;
     }
     const eventPayload = req.body;
-    console.log(eventPayload)
     // Check if credit card charge cleared successfully on Paystack network nodes
     if (eventPayload && eventPayload.plan_name && !eventPayload.event) {
       logger.warn("⚠️ [Routing Lane Collision]: Frontend/test script hit webhook route instead of subscribe path.");
@@ -93,20 +96,17 @@ export const handlePaystackWebhookSettlement = async (req: Request, res: Respons
 
     if (eventPayload && eventPayload.event === "charge.success") {
       logger.info(`💰 [Paystack Webhook Success]: Intercepted authentic card charge token.`);
-
       const transactionData = eventPayload.data;
       
       // 🎯 THE ANTI-CRASH FIX: Explicitly safe-guard metadata targets to prevent undefined crashes [S4]
       const metadata = transactionData?.metadata || {};
-      const businessId = metadata.businessId || metadata.business_id;
-      const planName = metadata.plan_name || "PRO_GROWTH_PLAN";
-      
-      const gatewayReference = transactionData?.reference;
+      const businessId = metadata.businessId 
+      const planName = metadata.plan_name 
+        const gatewayReference = transactionData?.reference; 
       
       // Convert Kobo parameter integers back to Naira floating decimal values smoothly (e.g. 500000 -> 5000.00) [S4]
       const rawAmount = Number(transactionData?.amount || 0);
-      const totalAmountPaidInNaira = (rawAmount / 100).toFixed(2);
-
+      const plan_price = (rawAmount / 100).toFixed(2)
       if (!businessId) {
         logger.warn(`ℹ️ Webhook Acknowledged: Payment cleared but ignored due to missing business metadata context.`);
         res.status(200).send("Webhook Handled Cleanly (No business metadata available).");
@@ -114,12 +114,10 @@ export const handlePaystackWebhookSettlement = async (req: Request, res: Respons
       }
 
       logger.info(`🆙 [BizFlow Billing]: Activating data service layers for business profile [${businessId}]...`);
-      logger.info(`💸 Summary: Verified receipt reference #${gatewayReference} tracking a sum value of ₦${totalAmountPaidInNaira} for plan [${planName}].`);
+      
 
-      // =========================================================================
-      // 🗄️ PLACE YOUR PRISMA/SERVICE DATABASE UPGRADE LOGIC DIRECTLY HERE:
-      // =========================================================================
-      // await processWebhookUpgradeService(businessId, planName, totalAmountPaidInNaira);
+       await updateSubscriptionService(businessId, planName, plan_price, gatewayReference);
+      logger.info(`💸 Summary: Verified receipt reference #${gatewayReference} tracking a sum value of ₦${plan_price} for plan [${planName}].`);
     }
 
     res.status(200).send("Webhook Handled Cleanly.");

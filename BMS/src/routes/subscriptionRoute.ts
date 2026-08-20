@@ -3,4 +3,4 @@ import { handleInitializeSubscriptionPayment, handlePaystackWebhookSettlement } 
 import { verifyAccessToken } from "../middleware/verifyAccessToken"
 export const subscriptionRouter = Router()
 subscriptionRouter.post("/subscribe", verifyAccessToken, handleInitializeSubscriptionPayment)
-subscriptionRouter.post("/paystack/webhook", handlePaystackWebhookSettlement)
+subscriptionRouter.post("/subscribe-webhook", handlePaystackWebhookSettlement)

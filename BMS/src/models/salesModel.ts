@@ -333,14 +333,14 @@ export const fetchBusinessReportModel = async (businessId: string, startDate: Da
 //  get weekly sales overview model
 export const getWeeklySalesOverviewModel = async (businessId:string) =>{
   try{
-     const rawData: any[] = await prisma.$queryRaw
-      `SELECT 
-        EXTRACT(DOW FROM "createdAt") AS day_index,
+     const rawData: any[] = await prisma.$queryRaw`
+      SELECT 
+        EXTRACT(ISODOW FROM "createdAt") AS day_index, -- Monday is 1, Sunday is 7
         TO_CHAR("createdAt", 'Dy') AS day_name,
         SUM("total_amount") AS total_sales 
-        FROM "sales"                         
+      FROM "sales"                         
       WHERE "businessId" = ${businessId}
-        AND "createdAt" >= NOW() - INTERVAL '7 days'
+        AND "createdAt" >= DATE_TRUNC('week', NOW()) 
       GROUP BY day_index, day_name
       ORDER BY day_index ASC;
     `;

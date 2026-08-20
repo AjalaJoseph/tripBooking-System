@@ -58,7 +58,7 @@ model Plan {
 /// Tracks the active or past subscriptions of a business
 model Subscription {
   id          String    @id @default(uuid())
-  business_id String
+  business_id String @unique
   plan_id     String
   status      String    // "active", "expired", "cancelled"
   start_at    DateTime  @default(now())
