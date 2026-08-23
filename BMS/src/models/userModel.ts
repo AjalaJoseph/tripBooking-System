@@ -85,7 +85,9 @@ export const getStaffData = async (email:string) => {
     include:{
         business:{
             select:{
-                business_name:true
+                business_name:true,
+                owner_name:true,
+                createdAt:true
             }
         }
     }
@@ -107,7 +109,16 @@ export const updateStaffPassword =async (email:string, password:string)=>{
         }
     })
 }
-
+export const changePassword = async (email:string, password:string) =>{
+    return await prisma.business.update({
+        where:{
+            business_email:email
+        },
+        data:{
+            password:password
+        }
+    })
+}
 //  get all register staff by business owner
 export const getAllStaff = async (businessId: string) => {
   const allstaff = await prisma.user.findMany({

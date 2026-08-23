@@ -10,7 +10,8 @@ import { registerBusinessOwner,
     deleteStaff,
     businessOwnerResetPassword,
     staffResetPassword,
-    deActivateStaffModel
+    deActivateStaffModel,
+    changePassword
  } from "../models/userModel";
  import { accountBucketService } from "../middleware/accountBucket";
  import { createAuditLog } from "../models/log";
@@ -137,7 +138,7 @@ export const businessLoginServicve = async (email:string, password:string, ipAdd
         })
          accountBucketService.clear(businessExist.id)
             const redisKey = `refresh:${jti}`;
-           await redis.set(redisKey, JSON.stringify({userId: businessExist.id, refresh:refreshTokenHash,}), "EX", 7 * 24 * 60 * 60);
+           await redis.set(redisKey, JSON.stringify({userId: businessExist.id, refresh:refreshTokenHash,familyId: familyId}), "EX", 7 * 24 * 60 * 60);
            await redis.sadd(`refresh-family:${familyId}`,jti);
            delete (businessExist as any).password
             return{
@@ -304,6 +305,59 @@ export const updateStaffPasswordService = async (email:string, password:string) 
     return update
 }
 
+//  password change 
+export const changeStaffPasswordService = async (email:string, odlPassword:string, newPassword:string, ipAddress?:string, userAgent?:string) =>{
+    const staffExist= await getStaffData(email)
+    if(!staffExist){
+        throw Object.assign(new Error("staff not found"), {STATUS_CODES:404})
+    }
+    const confirmPassword = await bcrypt.compare(odlPassword, staffExist.password);
+  if (!confirmPassword) {
+    throw Object.assign(new Error("The current password you provided is incorrect. Update aborted."), { STATUS_CODES: 401 });
+  }
+
+   const hashPassword = await bcrypt.hash(newPassword,12)
+    const changePassword = await updateStaffPassword(email, hashPassword)
+    await createAuditLog({
+            event: "PASSWORD_CHANGED",
+            userId:staffExist.id,
+            ipAddress:ipAddress,
+            userAgent:userAgent,
+            metadata:{
+                role:staffExist.role
+            }
+        })
+    delete(changePassword as any).password
+    return changePassword
+
+}
+
+//  change business owner password 
+export const changeOwnerPasswordService = async (email:string, odlPassword:string, newPassword:string, ipAddress?:string, userAgent?:string) =>{
+    const businessExist= await getBusinessAccount(email)
+    if(!businessExist){
+        throw Object.assign(new Error("business not found"), {STATUS_CODES:404})
+    }
+    const confirmPassword = await bcrypt.compare(odlPassword, businessExist.password);
+  if (!confirmPassword) {
+    throw Object.assign(new Error("The current password you provided is incorrect. Update aborted."), { STATUS_CODES: 401 });
+  }
+
+   const hashPassword = await bcrypt.hash(newPassword,12)
+    const updatePassword = await changePassword(email, hashPassword)
+     await createAuditLog({
+            event: "PASSWORD_CHANGED",
+            userId:updatePassword.id,
+            ipAddress:ipAddress,
+            userAgent:userAgent,
+            metadata:{
+                role:updatePassword.role || null
+            }
+        })
+    delete(updatePassword as any).password
+    return updatePassword
+
+}
 //  get all staff register by business owner
 export const getAllStaffService = async (businessId:string) =>{
     return await getAllStaff(businessId)

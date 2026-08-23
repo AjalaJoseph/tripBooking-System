@@ -14,7 +14,9 @@ import { registerBusinessOwnerService,
     resetPasswordService,
     resetBusinessOwnerPasswordService,
     deActivateStaffService,
-    refreshTokenRotationService
+    refreshTokenRotationService,
+    changeOwnerPasswordService,
+    changeStaffPasswordService
  } from "../services/authService"
 
 import jwt from "jsonwebtoken";
@@ -157,7 +159,8 @@ export const logoutController = async (req: Request, res: Response, next: NextFu
     res.clearCookie('refreshToken', {
       httpOnly: true,
       sameSite: 'strict',
-      secure: process.env.NODE_ENV === 'production'
+      secure: process.env.NODE_ENV === 'production',
+      path: "/"
     });
 
     res.status(200).json({
@@ -171,7 +174,8 @@ export const logoutController = async (req: Request, res: Response, next: NextFu
     res.clearCookie('refreshToken', {
       httpOnly: true,
       sameSite: 'strict',
-      secure: process.env.NODE_ENV === 'production'
+      secure: process.env.NODE_ENV === 'production',
+      path:"/"
     });
     next(error);
   }
@@ -184,6 +188,12 @@ export const updateStaffPasswordController = async (req:Request, res:Response, n
     const {new_password} = req.body
     const updatePassword = await updateStaffPasswordService(email,new_password)
     await revokeAllUserTokenSessions(id)
+    res.clearCookie('refreshToken', {
+      httpOnly: true,
+      sameSite: 'strict',
+      secure: process.env.NODE_ENV === 'production',
+      path:"/"
+    });
     return res.status(201).json({
       status:"success",
       message:"password update successful!",
@@ -194,6 +204,47 @@ export const updateStaffPasswordController = async (req:Request, res:Response, n
   }
 }
 
+//  change password controller 
+export const handleDynamicChnagePasswordController = async (req:Request, res:Response, next:NextFunction) =>{
+  try{
+    const {id, email, role}= (req as any).user
+    const {old_password, new_password} = req.body
+    const ipAddress = req.ip
+   const userAgent = req.get("user-agent")
+    if (role.toUpperCase()==="OWNER" ){
+     const updatePassword = await changeOwnerPasswordService(email, old_password,new_password,ipAddress,userAgent)
+     await revokeAllUserTokenSessions(id)
+     res.clearCookie('refreshToken', {
+      httpOnly: true,
+      sameSite: 'strict',
+      secure: process.env.NODE_ENV === 'production',
+      path:"/"
+    });
+      return res.status(201).json({
+        status:"success",
+        message:"password update successful!",
+        updatePassword
+      })
+    }
+    if (role.toUpperCase()==="STAFF" ){
+     const updatePassword = await changeStaffPasswordService(email, old_password,new_password,ipAddress,userAgent)
+     await revokeAllUserTokenSessions(id)
+     res.clearCookie('refreshToken', {
+      httpOnly: true,
+      sameSite: 'strict',
+      secure: process.env.NODE_ENV === 'production',
+      path:"/"
+    });
+      return res.status(201).json({
+        status:"success",
+        message:"password update successful!",
+        updatePassword
+      })
+    }
+  }catch(error){
+    return next(error)
+  }
+}
 //  get allStaff controller 
 
 export const handleGetAllStaff = async (req: Request, res: Response, next: NextFunction) => {

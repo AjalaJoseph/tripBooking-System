@@ -67,7 +67,7 @@ export const verifyRefreshToken = async (req: Request, res: Response, next: Next
               });
             }
             console.warn(`Refresh token reuse detected for user ${decoded.id}, family ${familyId}` );
-            await revokeRefreshTokenFamily(familyId);
+            await revokeRefreshTokenFamily(familyId, "REFRESH_TOKEN_REUSE");
             tokenRotationCounter.inc({ status: "revoked_reuse", breach_detected: "true" });
              await createAuditLog({
                 event: "REFRESH_TOKEN_REUSE_DETECTED",
@@ -148,19 +148,20 @@ export const revokeAllUserTokenSessions = async (userId:string) =>{
     cursor = nextCursor;
   for (const key of keys) {
       const cachedToken = await redis.get(key);
+
       if (!cachedToken) {
         continue;
       }
-
+      
       try {
-        const decoded = jwt.decode(cachedToken) as {
-          id?: string;
+       const tokenMetadata = JSON.parse(cachedToken) as {
+          userId?: string;
+          refresh?: string;
           familyId?: string;
-          jti?: string;
-        } | null;
-
-        if ( decoded?.id === userId && decoded.familyId) {
-          families.add(decoded.familyId);
+        };
+        // console.log(decoded)
+       if (tokenMetadata?.userId === userId && tokenMetadata.familyId) {
+          families.add(tokenMetadata.familyId);
         }
       } catch {
         // Ignore invalid refresh token data
@@ -168,7 +169,7 @@ export const revokeAllUserTokenSessions = async (userId:string) =>{
     }
   } while (cursor !== "0");
   for (const familyId of families) {
-    await revokeRefreshTokenFamily(familyId);
+    await revokeRefreshTokenFamily(familyId, "PASSWORD_CHANGED");
   }
   return {
     userId,

@@ -14,7 +14,8 @@ import { registerBusinessOwnerController,
     resetPasswordController,
     resetBusinessOwnerPasswordController,
     handleResendForgotPasswordOTP,
-    handleDeActivateStaff
+    handleDeActivateStaff,
+    handleDynamicChnagePasswordController
  } from "../controllers/authController"
  import { countSalesController } from "../controllers/salesController"
 import { validateBusinessAccountInput,
@@ -35,6 +36,7 @@ authRouter.post("/login-business", authRateLimiter, validateloginInput, handleBu
 authRouter.post('/register-staff', verifyAccessToken, checkSubscriptionActive,enforceStaffLimit, validateStaffInput, staffRegistrationController)
 authRouter.post('/login-staff',authRateLimiter, validateStaffLoginInput,handleStaffLogin )
 authRouter.patch('/change-staff-password', verifyAccessToken, validateStaffPasswordInput,updateStaffPasswordController)
+authRouter.patch("/change-password", verifyAccessToken, validateStaffPasswordInput,handleDynamicChnagePasswordController)
 authRouter.get('/all-staff', verifyAccessToken, handleGetAllStaff)
 authRouter.patch("/:staffId/edit-staff", verifyAccessToken, validateStaffInput, handleStaffProfileUpdateController);
 authRouter.delete('/:staffId/remove-staff', verifyAccessToken, handleDeleteStaff)
