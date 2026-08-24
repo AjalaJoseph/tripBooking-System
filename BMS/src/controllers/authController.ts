@@ -16,7 +16,8 @@ import { registerBusinessOwnerService,
     deActivateStaffService,
     refreshTokenRotationService,
     changeOwnerPasswordService,
-    changeStaffPasswordService
+    changeStaffPasswordService,
+    updateBusinessAccountService
  } from "../services/authService"
 
 import jwt from "jsonwebtoken";
@@ -202,6 +203,23 @@ export const updateStaffPasswordController = async (req:Request, res:Response, n
   }catch(error){
     return next(error)
   }
+}
+
+// update business acount controller
+export const handleUpdateBusinessAccountController =async (req:Request, res:Response, next:NextFunction) =>{
+   const ipAddress = req.ip
+   const userAgent = req.get("user-agent")
+   const {id} = ( req as any).user
+   const {newOwnerName, newBusinessName} =req.body
+   try{
+      await updateBusinessAccountService(id,newOwnerName, newBusinessName, ipAddress, userAgent )
+      return res.status(201).json({
+        status:"success",
+        message:"Account update successful!"
+      })
+   }catch(error){
+    return next(error)
+   }
 }
 
 //  change password controller 

@@ -153,16 +153,38 @@ export const ValidateForgotPasswordEmail = [
         return next()
     }
 ]
+// update business account 
+export const validateBusinessAccountUpdateInput = [
+  body("newOwnerName")
+  .trim()
+  .notEmpty()
+  .withMessage("owner name is required"),
+   body("newBusinessName")
+  .trim()
+  .notEmpty()
+  .withMessage("buainess name is required"),
 
+  (req:Request, res:Response, next:NextFunction) =>{
+        const errors = validationResult(req)
+        if(!errors.isEmpty()){
+            const errorMessage = errors.array()[0].msg
+            return res.status(400).json({
+                status:"fail",
+                message:errorMessage
+            })
+        } 
+        return next()
+    }
+]
 //  reset password validator
 export const ValidateResetPasswordInput = [
     body("otpCode")
     .trim()
     .notEmpty()
-    .withMessage('otpCode field is required'),
+    .withMessage('otpCode  is required'),
     body('new_password')
     .trim()
-    .notEmpty().withMessage('New password field is required')
+    .notEmpty().withMessage('New password  is required')
     .isStrongPassword()
     .withMessage("password must be at least 8 characters including 1 lower case 1 upper case, 1 number and 1 symbol"),
    

@@ -231,6 +231,20 @@ export const businessOwnerResetPassword = async (email:string, password:string) 
     return reset
 }
 
+//  update business account profile 
+export const updateBusinessAccount = async (businessId:string, newOwnerName:string, newBusinessName:string) =>{
+    const updateAccount = await prisma.business.update({
+        where:{
+            id:businessId
+        },
+        data:{
+            owner_name:newOwnerName,
+            business_name:newBusinessName
+        }
+    })
+    return updateAccount
+}
+
 //  forgot password for all staff register 
 export const staffResetPassword = async (email:string, password:string) =>{
     const reset = await prisma.user.update({

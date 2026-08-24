@@ -11,7 +11,8 @@ import { registerBusinessOwner,
     businessOwnerResetPassword,
     staffResetPassword,
     deActivateStaffModel,
-    changePassword
+    changePassword,
+    updateBusinessAccount
  } from "../models/userModel";
  import { accountBucketService } from "../middleware/accountBucket";
  import { createAuditLog } from "../models/log";
@@ -304,6 +305,23 @@ export const updateStaffPasswordService = async (email:string, password:string) 
     delete(update as any).password
     return update
 }
+
+//  updateBusinessAccount service 
+export const  updateBusinessAccountService = async (businessId:string, newOwnerName:string, newBusinessName:string, ipAddress?:string, userAgent?:string) =>{
+    const updateAccount = await updateBusinessAccount(businessId, newOwnerName, newBusinessName)
+      await createAuditLog({
+            event: "BUSINESS_ACCOUNT_UPDATE",
+            userId:updateAccount.id,
+            ipAddress:ipAddress,
+            userAgent:userAgent,
+            metadata:{
+                role:updateAccount.role
+            }
+        })
+        delete(updateAccount as any).password
+        return updateAccount
+}
+
 
 //  password change 
 export const changeStaffPasswordService = async (email:string, odlPassword:string, newPassword:string, ipAddress?:string, userAgent?:string) =>{

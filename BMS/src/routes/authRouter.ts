@@ -15,7 +15,8 @@ import { registerBusinessOwnerController,
     resetBusinessOwnerPasswordController,
     handleResendForgotPasswordOTP,
     handleDeActivateStaff,
-    handleDynamicChnagePasswordController
+    handleDynamicChnagePasswordController,
+    handleUpdateBusinessAccountController
  } from "../controllers/authController"
  import { countSalesController } from "../controllers/salesController"
 import { validateBusinessAccountInput,
@@ -24,7 +25,8 @@ import { validateBusinessAccountInput,
      validateStaffLoginInput,
      validateStaffPasswordInput,
     ValidateForgotPasswordEmail,
-    ValidateResetPasswordInput
+    ValidateResetPasswordInput,
+    validateBusinessAccountUpdateInput
  } from "../validators/authValidator"
  import { verifyAccessToken } from "../middleware/verifyAccessToken"
 import { verifyRefreshToken } from "../middleware/verifyRefreshToken"
@@ -49,3 +51,4 @@ authRouter.post("/reset-password/owner", ValidateResetPasswordInput, resetBusine
 authRouter.post("/resend-otp", handleResendForgotPasswordOTP)
 authRouter.get("/subscription/usage", verifyAccessToken, countSalesController)
 authRouter.patch("/:staffId/toggle-status", verifyAccessToken, handleDeActivateStaff)
+authRouter.patch("/update-account", verifyAccessToken, validateBusinessAccountUpdateInput, handleUpdateBusinessAccountController)

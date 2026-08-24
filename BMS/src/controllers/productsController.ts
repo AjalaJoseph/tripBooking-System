@@ -5,6 +5,7 @@ import { createBulkProductsService,
     deleteSingleProductService,
     getProductForCashierSalesService
  } from "../services/productService";
+ import { logger } from "../config/logger";
 export const handleBulkProductsUpload = async (req:Request, res:Response, next:NextFunction) =>{
     try{
         const {id} = (req as any).user
@@ -100,3 +101,35 @@ export const handleGetProductForCashierController = async (req:Request, res:Resp
     return next(error)
   }
 }
+
+//  product excel file upload template controller 
+export const handleDownloadProductTemplateCSV = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    logger.info("📡 Ingesting CSV template retrieval request packet...");
+
+    const csvHeaders = ["product_name", "sellingPrice", "quantity"].join(",");
+    
+    const sampleRow = ["Sample Product A", "1500.00", "50"].join(",");
+    
+    const csvContent = `${csvHeaders}\n${sampleRow}`;
+
+    res.setHeader("Content-Type", "text/csv");
+    res.setHeader(
+      "Content-Disposition",
+      "attachment; filename=baazio_product_upload_template.csv"
+    );
+    res.setHeader("Cache-Control", "no-cache");
+
+    // Send the generated buffer data cleanly back down the active network lane
+    res.status(200).send(csvContent);
+    return;
+
+  } catch (error) {
+    logger.error("💥 Failed to compile infrastructure CSV spreadsheet document stream:", error);
+    next(error); 
+  }
+};
