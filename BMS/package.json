@@ -45,7 +45,7 @@
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/jsonwebtoken": "^9.0.10",
-    "@types/multer": "^2.1.0",
+    "@types/multer": "^2.2.0",
     "@types/node": "^26.3.0",
     "@types/nodemailer": "^8.0.1",
     "@types/opossum": "^8.1.9",
