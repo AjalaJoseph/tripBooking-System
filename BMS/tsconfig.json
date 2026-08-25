@@ -4,14 +4,6 @@
     "outDir": "./dist",
     "target": "ES2022",
     "module": "commonjs",
-
-    /* 💡 This array explicitly covers both the relative paths */
-    "typeRoots": [
-      "./node_modules/@types",
-      "../node_modules/@types"
-    ],
-    "types": ["node"],
-
     "sourceMap": true,
     "declaration": false,
     "declarationMap": false,
@@ -19,6 +11,8 @@
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
     "esModuleInterop": true,
+    
+    /* 💡 THIS BYPASSES COMPILER BUGS ON RENDER */
     "skipLibCheck": true
   },
   "include": ["**/*.ts"],
