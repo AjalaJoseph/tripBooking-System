@@ -11,9 +11,10 @@
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
     "esModuleInterop": true,
+    "skipLibCheck": true,
     
-    /* 💡 THIS BYPASSES COMPILER BUGS ON RENDER */
-    "skipLibCheck": true
+    /* 🚀 FIX: This forces TypeScript to load Node.js globals like 'process' globally */
+    "types": ["node"]
   },
   "include": ["**/*.ts"],
   "exclude": ["node_modules", "dist"]
