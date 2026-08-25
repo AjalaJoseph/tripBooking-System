@@ -432,7 +432,7 @@ export const handleResendForgotPasswordOTP = async (req: Request, res: Response,
       return;
     }
      const allActiveKeys = await redis.keys("password_reset_code:*");
-    let activeOtpCodeToDeliver: string | null = null;
+    let activeOtpCodeToDeliver = null;
 
     // Iterate through all active reset keys in RAM to find if an unexpired token maps to this user's email
     for (const currentKey of allActiveKeys) {

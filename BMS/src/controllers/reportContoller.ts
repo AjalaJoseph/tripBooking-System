@@ -1,11 +1,11 @@
 import { Request, Response, NextFunction } from "express";
-import { otherQueue } from "../backgroundQueues/otherQueue.js";
+import { otherQueue } from "../backgroundQueues/otherQueue";
 import crypto from "crypto";
 import path from "path";
 import fs from "fs";
 import {redis} from "../config/redis"
-import { generateReportService } from "../services/reportService.js";
-import { getActiveSubscription } from "../models/midllewareMolde.js";
+import { generateReportService } from "../services/reportService";
+import { getActiveSubscription } from "../models/midllewareMolde";
 //  generate report controller
 export const handleGetDynamicReportDashboard = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {

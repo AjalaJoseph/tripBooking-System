@@ -34,15 +34,20 @@ export const validateSalesCheckoutInput = [
   (req: Request, res: Response, next: NextFunction) => {
     const errors = validationResult(req);
     
-    if (!errors.isEmpty()) {
-      // Safely capture and extract the first readable error text message text string
-      const errorMessage = errors.array()[0].msg;
-      
-      return res.status(400).json({
-        status: "fail",
-        message: errorMessage
-      });
-    }
+     if (!errors.isEmpty()) {
+        const firstError = errors.array()[0]; // Extracted to check existence
+        if (!firstError) {
+          return res.status(400).json({
+            status: "fail",
+            message: "Validation failed"
+          });
+        }
+
+        return res.status(400).json({
+          status: "fail",
+          message: firstError.msg
+        });
+      }
     
     return next();
   }

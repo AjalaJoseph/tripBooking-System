@@ -47,8 +47,8 @@ export const businessLoginServicve = async (email:string, password:string, ipAdd
     if(!businessExist){
          await createAuditLog({
             event: "LOGIN_FAILED",
-            ipAddress:ipAddress,
-            userAgent:userAgent,
+            ipAddress:ipAddress ?? null,
+            userAgent:userAgent ?? null,
             metadata: {
             reason: "USER_NOT_FOUND",
             email,
@@ -78,8 +78,8 @@ export const businessLoginServicve = async (email:string, password:string, ipAdd
              await createAuditLog({
             event: "ACCOUNT_LOCKED",
             userId: businessExist.id,
-            ipAddress:ipAddress,
-            userAgent:userAgent,
+            ipAddress:ipAddress ?? null,
+            userAgent:userAgent ?? null,
             metadata: {
             reason: "TOO_MANY_FAILED_LOGIN_ATTEMPTS",
             attempts: result.attempts,
@@ -100,8 +100,8 @@ export const businessLoginServicve = async (email:string, password:string, ipAdd
             await createAuditLog({
                 event: "LOGIN_FAILED",
                 userId: businessExist.id,
-                ipAddress:ipAddress,
-                userAgent:userAgent,
+                ipAddress:ipAddress ?? null,
+                userAgent:userAgent ?? null,
                 metadata: {
                 reason: "INVALID_PASSWORD",
                 email,
@@ -131,8 +131,8 @@ export const businessLoginServicve = async (email:string, password:string, ipAdd
         await createAuditLog({
             event: "LOGIN_SUCCESS",
             userId:businessExist.id,
-            ipAddress:ipAddress,
-            userAgent:userAgent,
+            ipAddress:ipAddress ?? null,
+            userAgent:userAgent ?? null,
             metadata:{
                 role:businessExist.role
             }
@@ -197,8 +197,8 @@ export const staffLoginServicve = async (email:string, password:string, ipAddres
     if(!staffExist){
          await createAuditLog({
             event: "LOGIN_FAILED",
-            ipAddress:ipAddress,
-            userAgent:userAgent,
+            ipAddress:ipAddress ?? null,
+            userAgent:userAgent ?? null,
             metadata: {
             reason: "USER_NOT_FOUND",
             email,
@@ -228,8 +228,8 @@ export const staffLoginServicve = async (email:string, password:string, ipAddres
              await createAuditLog({
                 event: "ACCOUNT_LOGIN_BLOCKED",
                 userId: staffExist.id,
-                ipAddress:ipAddress,
-                userAgent :userAgent,
+                ipAddress:ipAddress ?? null,
+                userAgent:userAgent ?? null,
                 metadata: {
                 reason: "TOO_MANY_FAILED_LOGIN_ATTEMPTS",
                 attempts: result.attempts,
@@ -252,8 +252,8 @@ export const staffLoginServicve = async (email:string, password:string, ipAddres
         await createAuditLog({
             event: "LOGIN_FAILED",
             userId: staffExist.id,
-            ipAddress:ipAddress,
-            userAgent:userAgent,
+            ipAddress:ipAddress ?? null,
+            userAgent:userAgent ?? null,
             metadata: {
             reason: "INVALID_PASSWORD",
             email,
@@ -276,8 +276,8 @@ export const staffLoginServicve = async (email:string, password:string, ipAddres
      await createAuditLog({
             event: "LOGIN_SUCCESS",
             userId:staffExist.id,
-            ipAddress:ipAddress,
-            userAgent:userAgent,
+            ipAddress:ipAddress ?? null,
+            userAgent:userAgent ?? null,
             metadata:{
                 role:staffExist.role
             }
@@ -312,8 +312,8 @@ export const  updateBusinessAccountService = async (businessId:string, newOwnerN
       await createAuditLog({
             event: "BUSINESS_ACCOUNT_UPDATE",
             userId:updateAccount.id,
-            ipAddress:ipAddress,
-            userAgent:userAgent,
+            ipAddress:ipAddress ?? null,
+            userAgent:userAgent ?? null,
             metadata:{
                 role:updateAccount.role
             }
@@ -339,8 +339,8 @@ export const changeStaffPasswordService = async (email:string, odlPassword:strin
     await createAuditLog({
             event: "PASSWORD_CHANGED",
             userId:staffExist.id,
-            ipAddress:ipAddress,
-            userAgent:userAgent,
+            ipAddress:ipAddress ?? null,
+            userAgent:userAgent ?? null,
             metadata:{
                 role:staffExist.role
             }
@@ -366,8 +366,8 @@ export const changeOwnerPasswordService = async (email:string, odlPassword:strin
      await createAuditLog({
             event: "PASSWORD_CHANGED",
             userId:updatePassword.id,
-            ipAddress:ipAddress,
-            userAgent:userAgent,
+            ipAddress:ipAddress ?? null,
+            userAgent:userAgent ?? null,
             metadata:{
                 role:updatePassword.role || null
             }
@@ -417,8 +417,8 @@ export const editStaffProfileService = async (businessId:string, staff_id:any, u
     await createAuditLog({
         event: "STAFF_REMOVED",
         userId: staff_id,
-        ipAddress: ipAddress,
-        userAgent: userAgent,
+        ipAddress:ipAddress ?? null,
+        userAgent:userAgent ?? null,
         metadata: {
             staffId: staff_id,
             staffEmail: removeStaff.staff_email,
@@ -440,8 +440,8 @@ export const editStaffProfileService = async (businessId:string, staff_id:any, u
      await createAuditLog({
     event: nextStaffStatus? "STAFF_REACTIVATED" : "STAFF_SUSPENDED",
     userId: business_id,
-    ipAddress: ipAddress,
-    userAgent: userAgent,
+    ipAddress:ipAddress ?? null,
+    userAgent:userAgent ?? null,
     metadata: {
       staffId: staff_id,
       businessId: business_id,
@@ -523,8 +523,8 @@ export const resetPasswordService = async (otpCode :string, password:string, ipA
           await createAuditLog({
             event: "PASSWORD_RESET",
             userId: newPassword.id,
-            ipAddress: ipAddress,
-            userAgent:userAgent,
+           ipAddress:ipAddress ?? null,
+            userAgent:userAgent ?? null,
             metadata: {
                 method: "FORGOT_PASSWORD",
                 email
@@ -540,8 +540,8 @@ export const resetPasswordService = async (otpCode :string, password:string, ipA
            await createAuditLog({
             event: "PASSWORD_RESET",
             userId: newPassword.id,
-            ipAddress: ipAddress,
-            userAgent:userAgent,
+            ipAddress:ipAddress ?? null,
+            userAgent:userAgent ?? null,
             metadata: {
                 method: "FORGOT_PASSWORD",
                 email

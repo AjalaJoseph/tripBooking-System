@@ -11,10 +11,10 @@ import { createSalesService,
   countActiveTerminalService,
   getTopStaffRevenueService,
   getLatestThreeStaffSalesHistory
- } from "../services/salesService.js";
+ } from "../services/salesService";
 //  import { countTenantSales } from "../models/midllewareMolde.js";
-import { salesTransactionCounter } from "../monitoring/metrics.js";
- import { getTotalSalesCount } from "../services/planUsageService.js";
+import { salesTransactionCounter } from "../monitoring/metrics";
+ import { getTotalSalesCount } from "../services/planUsageService";
 export const handlePOSCheckout = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
  const { items, payment_method } = req.body;
   const { id } = (req as any).user;
@@ -279,14 +279,13 @@ export const getLatestSalesController = async (req: Request, res: Response, next
 export const handleSalesDecription = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { salesId } = req.params;
-    const sales_id = salesId.toString()
-    if (!salesId) {
+     if (!salesId) {
       return res.status(400).json({
         status: "fail",
         message: "Validation Error: Missing target transaction identifier code parameter."
       });
     }
-
+    const sales_id = salesId.toString()
     const salesDes = await salesDescriptionService(sales_id);
 
     if (!salesDes) {

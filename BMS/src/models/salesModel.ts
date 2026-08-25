@@ -498,9 +498,9 @@ export const getTopStaffRevenueModel = async (businessId:string, todayStart:Date
       take: 1 // We only need the #1 top performer to keep data lightweight
     });
 
-    // 3. 🛡️ SAFE FALLBACK EXTRACTION
-    // If no sales have occurred today, default gracefully to prevent layout crashes
-    if (leaderboard.length === 0) {
+   const topPerformer = leaderboard[0];
+
+    if (!topPerformer) {
       return {
         topOperatorName: "No Sales Today",
         revenueGenerated: 0
@@ -508,7 +508,7 @@ export const getTopStaffRevenueModel = async (businessId:string, todayStart:Date
     }
 
     return {
-      topOperatorName: leaderboard[0].recorded_by,
-      revenueGenerated: Number(leaderboard[0]._sum.total_amount) || 0
+      topOperatorName: topPerformer.recorded_by ?? "Unknown Operator",
+      revenueGenerated: Number(topPerformer._sum.total_amount) || 0
     };
 }

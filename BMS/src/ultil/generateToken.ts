@@ -13,10 +13,10 @@ export const generateAccessToken = (email: string, id: string, role:string): str
     role:   role
   };
 
- const tokenExpire = (process.env.JWT_EXPIRES_IN || "15m") as jwt.SignOptions['expiresIn'];
-  return jwt.sign(payload, ACCESS_TOKEN_SECRET, {
-    expiresIn: tokenExpire 
-  });
+ const tokenExpire: jwt.SignOptions['expiresIn'] = (process.env.JWT_EXPIRES_IN as jwt.SignOptions['expiresIn']) || "15m";
+return jwt.sign(payload, ACCESS_TOKEN_SECRET, {
+  expiresIn: tokenExpire 
+});
 };
 
 
@@ -29,10 +29,10 @@ export const generateRefreshToken = (email: string, id:string, familyId:string, 
     jti:jti,
     familyId:familyId
   };
-  const refreshExpire =  (process.env.REFREESH_TOKEN_EXPIRES_IN  || "7d") as jwt.SignOptions['expiresIn'];
-  const token = jwt.sign(payload, REFRESH_TOKEN_SECRET, {expiresIn: refreshExpire});
-  return{
-    token,
-    jti
-  }
+ const refreshExpire: jwt.SignOptions['expiresIn'] = (process.env.REFREESH_TOKEN_EXPIRES_IN as jwt.SignOptions['expiresIn']) || "7d";
+const token = jwt.sign(payload, REFRESH_TOKEN_SECRET, { expiresIn: refreshExpire });
+return {
+  token,
+  jti
+};
 };

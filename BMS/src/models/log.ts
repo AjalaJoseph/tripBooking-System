@@ -1,12 +1,12 @@
-import { prisma } from "../config/db.js";
-import { Prisma } from "../generated/prisma/index.js";
+import { prisma } from "../config/db";
+import { Prisma } from "../generated/prisma/index";
 // create log data
 interface CreateAuditLogParams {
   event: string;
-  userId?: string;
-  ipAddress?: string;
-  userAgent?: string;
-  metadata?: Prisma.InputJsonValue
+  userId?: string | null;
+  ipAddress?: string | null;
+  userAgent?: string | null;
+  metadata?: Prisma.InputJsonValue;
 }
 export const createAuditLog = async({
   event,
@@ -16,13 +16,13 @@ export const createAuditLog = async({
   metadata
 }: CreateAuditLogParams)=>{
     const createLog = await prisma.auditLog.create({
-        data:{
-            event:event,
-            userId:userId|| null,
-            ipAddress:ipAddress,
-            userAgent:userAgent,
-            metadata:metadata
+        data: {
+            event: event,
+            userId: userId ?? null,       
+            ipAddress: ipAddress ?? null, 
+            userAgent: userAgent ?? null, 
+            metadata: metadata ?? Prisma.DbNull,   
         }
-    })
+    });
     return createLog
 }

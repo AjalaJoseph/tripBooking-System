@@ -12,6 +12,8 @@ dotenv.config();
 export const verifyRefreshToken = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { refreshToken } = req.cookies;
+    const ipAddress = req.ip;
+    const userAgent = req.get("user-agent");
     const refreshKey = process.env.REFRESH_SECRET;
       if (!refreshKey) {
           throw new Error("REFRESH_SECRET is not configured");
@@ -72,11 +74,11 @@ export const verifyRefreshToken = async (req: Request, res: Response, next: Next
              await createAuditLog({
                 event: "REFRESH_TOKEN_REUSE_DETECTED",
                 userId: decoded.id,
-                ipAddress: req.ip,
-                userAgent: req.get("user-agent") ?? undefined,
+                ipAddress: ipAddress ?? null,
+                userAgent: userAgent ?? null,
                 metadata: {
                   jti: decoded.jti,
-                  familyId:familyId,
+                  familyId:familyId ?? null,
                   reason: reason ?? "REVOKED_REFRESH_TOKEN_REUSED",
                 },
             });

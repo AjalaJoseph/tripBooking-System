@@ -1,254 +1,689 @@
 import PDFDocument from "pdfkit";
 import { redis } from "../config/redis";
-import { generateReportService } from "../services/reportService"
+import { generateReportService } from "../services/reportService";
 import fs from "fs";
 import path from "path";
-import { fileURLToPath } from "url";
-export const reportJob = async (data:any) =>{
-    let business_id = ""
-    let startDate =""
-    let endDate =""
-    if(data){
-        business_id = data.business_id
-        startDate = data.startDate
-        endDate = data.endDate
-    }
-    const report = await generateReportService(business_id, startDate, endDate)
 
-      const storageDirectory = path.resolve("./storage");
-
-  // If the physical directory doesn't exist on your Windows hard drive, create it automatically!
-    if (!fs.existsSync(storageDirectory)) {
-        fs.mkdirSync(storageDirectory, { recursive: true });
-        console.log(`📁 [Baazio Storage]: Created missing parent folder array directory at ${storageDirectory}`);
-    }
-
-  // 2. Define your clean dynamic filename handle path safely
-        const outputFilePath = path.join(storageDirectory, `Baazio_Report_${data.jobId}.pdf`);
-        const writeStream = fs.createWriteStream(outputFilePath);
-        // 4. 🖨️ INITIALIZE PDFKIT DOCUMENT INSTANCE IN SERVER RAM
-        const doc = new PDFDocument({ margin: 54, size: "A4" });
-        //  const outputFilePath = `./storage/BizFlow_Report_${data.jobId}.pdf`;
-        // const writeStream = fs.createWriteStream(outputFilePath);
-        doc.pipe(writeStream);
-        // Global Typography Set: Strict Times-Roman for financial compliance
-        const FONT_REG = "Times-Roman";
-        const FONT_BOLD = "Times-Bold";
-    
-        // =========================================================
-        // 📄 SECTION 1: MASTER LETTERHEAD
-        // =========================================================
-        doc.fillColor("#000000").font(FONT_BOLD).fontSize(20).text("BAAZIO MANAGEMENT SYSTEM", {align:"center"});
-        doc.font(FONT_REG).fontSize(10).fillColor("#555555").text("EXECUTIVE PERFORMANCE & FINANCIAL STATEMENT", {align:"center"});
-        
-        // Minimalist Top Double Rule Separator
-       doc.moveTo(54, 98).lineTo(541, 98).strokeColor("#000000").lineWidth(1).stroke();
-        doc.moveTo(54, 101).lineTo(541, 101).strokeColor("#000000").lineWidth(0.5).stroke();
-        doc.moveDown(2);
-    
-        // Statement Metadata Block
-        let yPos = 105;
-        doc.font(FONT_BOLD).fontSize(10).fillColor("#000000").text("Statement Date:", 54, yPos);
-        doc.font(FONT_REG).text(report.generated_at.toUTCString(), 140, yPos);
-        
-        yPos += 14;
-        doc.font(FONT_BOLD).text("Audit Timeline:", 54, yPos);
-        doc.font(FONT_REG).text(`From: ${startDate} To: ${new Date().toISOString().split('T')[0]}`, 140, yPos);
-        
-        yPos += 14;
-        doc.font(FONT_BOLD).text("Company Name:", 54, yPos);
-        doc.font(FONT_REG).text(`${report.business_context.company_name?.toUpperCase()}`, 140, yPos);
-    
-        yPos += 14;
-        doc.font(FONT_BOLD).text("Owner Name:", 54, yPos);
-        doc.font(FONT_REG).text(`${report.business_context.owner_name?.toUpperCase()}`, 140, yPos);
-    
-        // =========================================================
-        // 📊 SECTION 2: METRICS TABLES ARCHITECTURE
-        // =========================================================
-        
-        // --- TABLE 1: SUMMARY PERFORMANCE METRICS ---
-        yPos += 30;
-        doc.font(FONT_BOLD).fontSize(12).text("TRAFFIC & GENERAL VOLUME SUMMARY", 54, yPos);
-        
-        yPos += 18;
-        // Table 1 Headers
-        doc.fontSize(9).font(FONT_BOLD);
-        doc.text("METRIC DESCRIPTION", 54, yPos);
-        doc.text("ACCOUNTING REALITY", 400, yPos, { width: 141, align: "right" });
-        
-        yPos += 12;
-        doc.moveTo(54, yPos).lineTo(541, yPos).strokeColor("#777777").lineWidth(0.5).stroke();
-        
-        // Table 1 Rows
-        const metricsRows = [
-          ["Total Invoices / Receipts Issued", `${report.traffic_and_volume.total_receipts_issued}`],
-          ["Average Ticket Size / Basket Value", `NGN ${report.traffic_and_volume.average_basket_value.toFixed(2)}`],
-          ["Gross Sales Turn-over Volume", `NGN ${report.traffic_and_volume.gross_sales_volume.toFixed(2)}`]
-        ];
-    
-        metricsRows.forEach((row) => {
-          yPos += 16;
-          doc.font(FONT_REG).fontSize(10).text(row[0], 54, yPos);
-          doc.text(row[1], 400, yPos, { width: 141, align: "right" });
-        });
-    
-        // --- TABLE 2: REVENUE TRACKING BY DISBURSEMENT CHANNEL ---
-        yPos += 35;
-        doc.font(FONT_BOLD).fontSize(12).text("DIGITAL SETTLEMENT REVENUE TRACKING", 54, yPos);
-        
-        yPos += 18;
-        // Table 2 Headers
-        doc.fontSize(9).font(FONT_BOLD);
-        doc.text("PAYMENT METHOD CHANNEL", 54, yPos);
-        doc.text("SETTLED INCOME (NGN)", 400, yPos, { width: 141, align: "right" });
-        
-        yPos += 12;
-        doc.moveTo(54, yPos).lineTo(541, yPos).strokeColor("#777777").lineWidth(0.5).stroke();
-    
-        const paymentRows = [
-          ["Cash Receipts Payouts", `NGN ${report.gross_revenue_tracking.cash_payouts.toFixed(2)}`],
-          ["POS Machine Terminal Payouts", `NGN ${report.gross_revenue_tracking.card_payouts.toFixed(2)}`],
-          ["Direct Mobile App Bank Transfers", `NGN ${report.gross_revenue_tracking.transfer_payouts.toFixed(2)}`]
-        ];
-    
-        paymentRows.forEach((row) => {
-          yPos += 16;
-          doc.font(FONT_REG).fontSize(10).text(row[0], 54, yPos);
-          doc.text(row[1], 400, yPos, { width: 141, align: "right" });
-        });
-    
-        // --- TABLE 3: HIGH-VELOCITY PRODUCT MERCHANDISE ---
-        yPos += 35;
-        doc.font(FONT_BOLD).fontSize(12).text("PRODUCT SALES PERFORMANCE VELOCITY LOGS (TOP 5)", 54, yPos);
-        
-        yPos += 18;
-        // Table 3 Headers
-        doc.fontSize(9).font(FONT_BOLD);
-        doc.text("PRODUCT NAME DESCRIPTION", 54, yPos);
-        doc.text("UNITS SOLD", 340, yPos, { width: 80, align: "right" });
-        doc.text("REVENUE CONTRIBUTION", 430, yPos, { width: 131, align: "right" });
-        
-        yPos += 12;
-        doc.moveTo(54, yPos).lineTo(541, yPos).strokeColor("#777777").lineWidth(0.5).stroke();
-    
-        // Table 3 Data Evaluation
-        if (report.product_performance.highest_moving_items.length === 0) {
-          yPos += 16;
-          doc.font(FONT_REG).fontSize(10).text("No inventory transactions captured within this selected range parameters.", 54, yPos);
-        } else {
-          report.product_performance.highest_moving_items.forEach((item: any) => {
-            yPos += 16;
-            doc.font(FONT_REG).fontSize(10).text(item.productName, 54, yPos, { width: 270, lineBreak: false });
-            doc.text(`${item.unitsSold}`, 340, yPos, { width: 75, align: "right" });
-            doc.text(`NGN ${item.revenueGenerated.toFixed(2)}`, 430, yPos, { width: 111, align: "right" });
-          });
-        }
-    
-        // Double Baseline Total Boundary Rule
-        yPos += 20;
-        doc.moveTo(54, yPos).lineTo(541, yPos).strokeColor("#000000").lineWidth(1).stroke();
-        doc.moveTo(54, yPos + 2).lineTo(541, yPos + 2).strokeColor("#000000").lineWidth(0.5).stroke();
-    
-        // =========================================================
-        // 🖨️ SECTION 3: COMPLIANCE FOOTER
-        // =========================================================
-        doc.font(FONT_REG).fontSize(8).fillColor("#777777");
-        doc.text("CONFIDENTIAL STATISTICAL STATEMENT - PROCESSED AUTOMATICALLY VIA BAAZIO MULTI-TENANT ENGINE.", 54, 755, { align: "center" });
-    
-        // Seal the data stream pipeline
-        doc.end();
-        return new Promise<void>((resolve, reject) => {
-        writeStream.on("finish", async () => {
-    
-    // 💡 THE STATUS SYNC FIX: Cache the compilation success flag right into Redis!
-    const cacheDataPayload = {
-      status: "COMPLETED",
-      fileUrl: `/api/download-report/${data.jobId}/pdf` // Direct path to fetch the binary bits later
-    };
-    
-    // Store in Redis RAM with a 24-hour expiration safety TTL window
-    await redis.set(`pdf:report:status:${data.jobId}`, JSON.stringify(cacheDataPayload), "EX", 24 * 60 * 60);
-    console.log(`✅ [Baazio Workers]: Job [${data.jobId}] completely written to disk and cached in Redis RAM.`);
-    resolve();
-  });
-
-  writeStream.on("error", (err) => reject(err));
-});
-
+interface ReportJobData {
+  business_id: string;
+  startDate: string;
+  endDate: string;
+  jobId: string;
 }
 
-//  cvs report file background job
-export const csvReportJob = async (data: any) => {
-  let business_id = "";
-  let startDate = "";
-  let endDate = ""
-  let jobId = "";
+/**
+ * ============================================================
+ * PDF REPORT BACKGROUND JOB
+ * ============================================================
+ */
+export const reportJob = async (data: ReportJobData): Promise<void> => {
+  const {
+    business_id,
+    startDate,
+    endDate,
+    jobId,
+  } = data;
 
-  if (data) {
-    business_id = data.business_id;
-    startDate = data.startDate;
-    endDate = data.endDate
-    jobId = data.jobId; // Capture the unique tracking ticket ID
-  }
+  // ============================================================
+  // 1. GENERATE REPORT DATA
+  // ============================================================
 
-    
-  // 1. 📁 SELF-HEALING DIRECTORY GUARD
+  const report = await generateReportService(
+    business_id,
+    startDate,
+    endDate
+  );
+
+  // ============================================================
+  // 2. ENSURE STORAGE DIRECTORY EXISTS
+  // ============================================================
+
   const storageDirectory = path.resolve("./storage");
+
   if (!fs.existsSync(storageDirectory)) {
-    fs.mkdirSync(storageDirectory, { recursive: true });
-    console.log(`📁 [Baazio Storage]: Created missing parent folder array directory at ${storageDirectory}`);
+    fs.mkdirSync(storageDirectory, {
+      recursive: true,
+    });
+
+    console.log(
+      `📁 [Baazio Storage]: Created storage directory at ${storageDirectory}`
+    );
   }
 
-  // Fetch the live dynamic 3-Pillar report snapshot layout payload
-  const report = await generateReportService(business_id, startDate, endDate);
+  // ============================================================
+  // 3. CREATE PDF FILE PATH
+  // ============================================================
 
-  // 2. 📊 BUILD THE PROFESSIONAL CSV TEXT BLOCK STRING
-  let csvContent = "";
+  const outputFilePath = path.join(
+    storageDirectory,
+    `Baazio_Report_${jobId}.pdf`
+  );
 
-  // Header Meta Section
-  csvContent += `Baazio BUSINESS PERFORMANCE SUMMARY REPORT\n`;
-  csvContent += `Generated At,${report.generated_at.toISOString()}\n`;
-  csvContent += `Timeline Window,From ${startDate} to ${new Date().toISOString().split('T')[0]}\n\n`;
+  const writeStream = fs.createWriteStream(outputFilePath);
 
-  // Pillar 1: Traffic & Volume CSV Block
-  csvContent += `1. TRAFFIC & VOLUME METRICS\n`;
-  csvContent += `Metric Vector,Calculated Realities\n`;
-  csvContent += `Total Receipts Issued,${report.traffic_and_volume.total_receipts_issued}\n`;
-  csvContent += `Average Basket Value Size,${report.traffic_and_volume.average_basket_value.toFixed(2)}\n`;
-  csvContent += `Gross Sales Volume Revenue,${report.traffic_and_volume.gross_sales_volume.toFixed(2)}\n\n`;
+  // ============================================================
+  // 4. INITIALIZE PDF DOCUMENT
+  // ============================================================
 
-  // Pillar 2: Gross Revenue Tracking Payouts
-  csvContent += `2. DIGITAL SETTLEMENT REVENUE TRACKING\n`;
-  csvContent += `Payment Method Channel,Settled Income\n`;
-  csvContent += `Cash Receipts Payouts,${report.gross_revenue_tracking.cash_payouts.toFixed(2)}\n`;
-  csvContent += `POS Machine Terminal Payouts,${report.gross_revenue_tracking.card_payouts.toFixed(2)}\n`;
-  csvContent += `Direct Mobile App Bank Transfers,${report.gross_revenue_tracking.transfer_payouts.toFixed(2)}\n\n`;
+  const doc = new PDFDocument({
+    margin: 54,
+    size: "A4",
+  });
 
-  // Pillar 3: Product Performance Velocity Grid List
-  csvContent += `3. PRODUCT SALES PERFORMANCE VELOCITY LOGS (TOP 5)\n`;
-  csvContent += `Product Catalog Name,Units Depleted from Stock,Gross Revenue Contribution\n`;
-  
-  if (report.product_performance.highest_moving_items.length === 0) {
-    csvContent += `No stock transactions logged within this date range.,0,0.00\n`;
+  doc.pipe(writeStream);
+
+  const FONT_REG = "Times-Roman";
+  const FONT_BOLD = "Times-Bold";
+
+  // ============================================================
+  // SECTION 1: LETTERHEAD
+  // ============================================================
+
+  doc
+    .fillColor("#000000")
+    .font(FONT_BOLD)
+    .fontSize(20)
+    .text("BAAZIO MANAGEMENT SYSTEM", {
+      align: "center",
+    });
+
+  doc
+    .font(FONT_REG)
+    .fontSize(10)
+    .fillColor("#555555")
+    .text("EXECUTIVE PERFORMANCE & FINANCIAL STATEMENT", {
+      align: "center",
+    });
+
+  // Double separator
+  doc
+    .moveTo(54, 98)
+    .lineTo(541, 98)
+    .strokeColor("#000000")
+    .lineWidth(1)
+    .stroke();
+
+  doc
+    .moveTo(54, 101)
+    .lineTo(541, 101)
+    .strokeColor("#000000")
+    .lineWidth(0.5)
+    .stroke();
+
+  // ============================================================
+  // STATEMENT METADATA
+  // ============================================================
+
+  let yPos = 105;
+
+  doc
+    .font(FONT_BOLD)
+    .fontSize(10)
+    .fillColor("#000000")
+    .text("Statement Date:", 54, yPos);
+
+  doc
+    .font(FONT_REG)
+    .text(report.generated_at.toUTCString(), 140, yPos);
+
+  yPos += 14;
+
+  doc
+    .font(FONT_BOLD)
+    .text("Audit Timeline:", 54, yPos);
+
+  doc
+    .font(FONT_REG)
+    .text(`From: ${startDate} To: ${endDate}`, 140, yPos);
+
+  yPos += 14;
+
+  doc
+    .font(FONT_BOLD)
+    .text("Company Name:", 54, yPos);
+
+  doc
+    .font(FONT_REG)
+    .text(
+      report.business_context.company_name?.toUpperCase() ?? "N/A",
+      140,
+      yPos
+    );
+
+  yPos += 14;
+
+  doc
+    .font(FONT_BOLD)
+    .text("Owner Name:", 54, yPos);
+
+  doc
+    .font(FONT_REG)
+    .text(
+      report.business_context.owner_name?.toUpperCase() ?? "N/A",
+      140,
+      yPos
+    );
+
+  // ============================================================
+  // SECTION 2: SUMMARY PERFORMANCE METRICS
+  // ============================================================
+
+  yPos += 30;
+
+  doc
+    .font(FONT_BOLD)
+    .fontSize(12)
+    .text("TRAFFIC & GENERAL VOLUME SUMMARY", 54, yPos);
+
+  yPos += 18;
+
+  // Headers
+  doc
+    .fontSize(9)
+    .font(FONT_BOLD)
+    .text("METRIC DESCRIPTION", 54, yPos);
+
+  doc.text(
+    "ACCOUNTING REALITY",
+    400,
+    yPos,
+    {
+      width: 141,
+      align: "right",
+    }
+  );
+
+  yPos += 12;
+
+  doc
+    .moveTo(54, yPos)
+    .lineTo(541, yPos)
+    .strokeColor("#777777")
+    .lineWidth(0.5)
+    .stroke();
+
+  // Object-based rows
+  const metricsRows = [
+    {
+      label: "Total Invoices / Receipts Issued",
+      value: `${report.traffic_and_volume.total_receipts_issued}`,
+    },
+    {
+      label: "Average Ticket Size / Basket Value",
+      value: `NGN ${report.traffic_and_volume.average_basket_value.toFixed(
+        2
+      )}`,
+    },
+    {
+      label: "Gross Sales Turn-over Volume",
+      value: `NGN ${report.traffic_and_volume.gross_sales_volume.toFixed(
+        2
+      )}`,
+    },
+  ];
+
+  metricsRows.forEach((row) => {
+    yPos += 16;
+
+    doc
+      .font(FONT_REG)
+      .fontSize(10)
+      .text(row.label, 54, yPos);
+
+    doc.text(
+      row.value,
+      400,
+      yPos,
+      {
+        width: 141,
+        align: "right",
+      }
+    );
+  });
+
+  // ============================================================
+  // SECTION 3: REVENUE TRACKING
+  // ============================================================
+
+  yPos += 35;
+
+  doc
+    .font(FONT_BOLD)
+    .fontSize(12)
+    .text(
+      "DIGITAL SETTLEMENT REVENUE TRACKING",
+      54,
+      yPos
+    );
+
+  yPos += 18;
+
+  doc
+    .fontSize(9)
+    .font(FONT_BOLD)
+    .text(
+      "PAYMENT METHOD CHANNEL",
+      54,
+      yPos
+    );
+
+  doc.text(
+    "SETTLED INCOME (NGN)",
+    400,
+    yPos,
+    {
+      width: 141,
+      align: "right",
+    }
+  );
+
+  yPos += 12;
+
+  doc
+    .moveTo(54, yPos)
+    .lineTo(541, yPos)
+    .strokeColor("#777777")
+    .lineWidth(0.5)
+    .stroke();
+
+  const paymentRows = [
+    {
+      label: "Cash Receipts Payouts",
+      value: `NGN ${report.gross_revenue_tracking.cash_payouts.toFixed(
+        2
+      )}`,
+    },
+    {
+      label: "POS Machine Terminal Payouts",
+      value: `NGN ${report.gross_revenue_tracking.card_payouts.toFixed(
+        2
+      )}`,
+    },
+    {
+      label: "Direct Mobile App Bank Transfers",
+      value: `NGN ${report.gross_revenue_tracking.transfer_payouts.toFixed(
+        2
+      )}`,
+    },
+  ];
+
+  paymentRows.forEach((row) => {
+    yPos += 16;
+
+    doc
+      .font(FONT_REG)
+      .fontSize(10)
+      .text(row.label, 54, yPos);
+
+    doc.text(
+      row.value,
+      400,
+      yPos,
+      {
+        width: 141,
+        align: "right",
+      }
+    );
+  });
+
+  // ============================================================
+  // SECTION 4: TOP PRODUCTS
+  // ============================================================
+
+  yPos += 35;
+
+  doc
+    .font(FONT_BOLD)
+    .fontSize(12)
+    .text(
+      "PRODUCT SALES PERFORMANCE VELOCITY LOGS (TOP 5)",
+      54,
+      yPos
+    );
+
+  yPos += 18;
+
+  doc
+    .fontSize(9)
+    .font(FONT_BOLD)
+    .text(
+      "PRODUCT NAME DESCRIPTION",
+      54,
+      yPos
+    );
+
+  doc.text(
+    "UNITS SOLD",
+    340,
+    yPos,
+    {
+      width: 80,
+      align: "right",
+    }
+  );
+
+  doc.text(
+    "REVENUE CONTRIBUTION",
+    430,
+    yPos,
+    {
+      width: 111,
+      align: "right",
+    }
+  );
+
+  yPos += 12;
+
+  doc
+    .moveTo(54, yPos)
+    .lineTo(541, yPos)
+    .strokeColor("#777777")
+    .lineWidth(0.5)
+    .stroke();
+
+  // ============================================================
+  // PRODUCT DATA
+  // ============================================================
+
+  const topProducts =
+    report.product_performance.highest_moving_items;
+
+  if (topProducts.length === 0) {
+    yPos += 16;
+
+    doc
+      .font(FONT_REG)
+      .fontSize(10)
+      .text(
+        "No inventory transactions captured within this selected range.",
+        54,
+        yPos,
+        {
+          width: 487,
+        }
+      );
   } else {
-    report.product_performance.highest_moving_items.forEach((item: any) => {
-      // Sanitize commas out of text descriptions to protect CSV cell borders
-      const safeName = item.productName.replace(/,/g, " ");
-      csvContent += `${safeName},${item.unitsSold},${item.revenueGenerated.toFixed(2)}\n`;
+    topProducts.forEach((item) => {
+      yPos += 16;
+
+      doc
+        .font(FONT_REG)
+        .fontSize(10)
+        .text(
+          item.productName,
+          54,
+          yPos,
+          {
+            width: 270,
+            lineBreak: false,
+          }
+        );
+
+      doc.text(
+        `${item.unitsSold}`,
+        340,
+        yPos,
+        {
+          width: 75,
+          align: "right",
+        }
+      );
+
+      doc.text(
+        `NGN ${item.revenueGenerated.toFixed(2)}`,
+        430,
+        yPos,
+        {
+          width: 111,
+          align: "right",
+        }
+      );
     });
   }
 
-  // 3. 📝 WRITE COMPLETE DATA TO STORAGE DISK
-  const outputFilePath = path.join(storageDirectory, `Baazio_Report_${jobId}.csv`);
-  await fs.promises.writeFile(outputFilePath, csvContent, "utf8");
+  // ============================================================
+  // DOUBLE BASELINE
+  // ============================================================
 
-  // 4. ⚡ CACHE SUCCESS MARKERS IN REDIS RAM FOR THE POLLING CONTROLLER
+  yPos += 20;
+
+  doc
+    .moveTo(54, yPos)
+    .lineTo(541, yPos)
+    .strokeColor("#000000")
+    .lineWidth(1)
+    .stroke();
+
+  doc
+    .moveTo(54, yPos + 2)
+    .lineTo(541, yPos + 2)
+    .strokeColor("#000000")
+    .lineWidth(0.5)
+    .stroke();
+
+  // ============================================================
+  // FOOTER
+  // ============================================================
+
+  doc
+    .font(FONT_REG)
+    .fontSize(8)
+    .fillColor("#777777")
+    .text(
+      "CONFIDENTIAL STATISTICAL STATEMENT - PROCESSED AUTOMATICALLY VIA BAAZIO MULTI-TENANT ENGINE.",
+      54,
+      755,
+      {
+        align: "center",
+      }
+    );
+
+  // ============================================================
+  // FINISH PDF
+  // ============================================================
+
+  doc.end();
+
+  // ============================================================
+  // WAIT FOR FILE TO FINISH WRITING
+  // ============================================================
+
+  return new Promise<void>((resolve, reject) => {
+    writeStream.on("finish", async () => {
+      try {
+        const cacheDataPayload = {
+          status: "COMPLETED",
+          fileUrl: `/api/download-report/${jobId}/pdf`,
+        };
+
+        await redis.set(
+          `pdf:report:status:${jobId}`,
+          JSON.stringify(cacheDataPayload),
+          "EX",
+          24 * 60 * 60
+        );
+
+        console.log(
+          `✅ [Baazio Workers]: Job [${jobId}] completely written to disk and cached in Redis RAM.`
+        );
+
+        resolve();
+      } catch (error) {
+        reject(error);
+      }
+    });
+
+    writeStream.on("error", (error) => {
+      reject(error);
+    });
+  });
+};
+
+
+/**
+ * ============================================================
+ * CSV REPORT BACKGROUND JOB
+ * ============================================================
+ */
+export const csvReportJob = async (
+  data: ReportJobData
+): Promise<void> => {
+  const {
+    business_id,
+    startDate,
+    endDate,
+    jobId,
+  } = data;
+
+  // ============================================================
+  // 1. ENSURE STORAGE DIRECTORY EXISTS
+  // ============================================================
+
+  const storageDirectory = path.resolve("./storage");
+
+  if (!fs.existsSync(storageDirectory)) {
+    fs.mkdirSync(storageDirectory, {
+      recursive: true,
+    });
+
+    console.log(
+      `📁 [Baazio Storage]: Created storage directory at ${storageDirectory}`
+    );
+  }
+
+  // ============================================================
+  // 2. GENERATE REPORT DATA
+  // ============================================================
+
+  const report = await generateReportService(
+    business_id,
+    startDate,
+    endDate
+  );
+
+  // ============================================================
+  // 3. BUILD CSV
+  // ============================================================
+
+  let csvContent = "";
+
+  // Header
+  csvContent += "Baazio BUSINESS PERFORMANCE SUMMARY REPORT\n";
+
+  csvContent += `Generated At,${report.generated_at.toISOString()}\n`;
+
+  csvContent += `Timeline Window,From ${startDate} to ${endDate}\n\n`;
+
+  // ============================================================
+  // PILLAR 1
+  // ============================================================
+
+  csvContent += "1. TRAFFIC & VOLUME METRICS\n";
+
+  csvContent +=
+    "Metric Vector,Calculated Realities\n";
+
+  csvContent +=
+    `Total Receipts Issued,${report.traffic_and_volume.total_receipts_issued}\n`;
+
+  csvContent +=
+    `Average Basket Value Size,${report.traffic_and_volume.average_basket_value.toFixed(
+      2
+    )}\n`;
+
+  csvContent +=
+    `Gross Sales Volume Revenue,${report.traffic_and_volume.gross_sales_volume.toFixed(
+      2
+    )}\n\n`;
+
+  // ============================================================
+  // PILLAR 2
+  // ============================================================
+
+  csvContent +=
+    "2. DIGITAL SETTLEMENT REVENUE TRACKING\n";
+
+  csvContent +=
+    "Payment Method Channel,Settled Income\n";
+
+  csvContent +=
+    `Cash Receipts Payouts,${report.gross_revenue_tracking.cash_payouts.toFixed(
+      2
+    )}\n`;
+
+  csvContent +=
+    `POS Machine Terminal Payouts,${report.gross_revenue_tracking.card_payouts.toFixed(
+      2
+    )}\n`;
+
+  csvContent +=
+    `Direct Mobile App Bank Transfers,${report.gross_revenue_tracking.transfer_payouts.toFixed(
+      2
+    )}\n\n`;
+
+  // ============================================================
+  // PILLAR 3
+  // ============================================================
+
+  csvContent +=
+    "3. PRODUCT SALES PERFORMANCE VELOCITY LOGS (TOP 5)\n";
+
+  csvContent +=
+    "Product Catalog Name,Units Depleted from Stock,Gross Revenue Contribution\n";
+
+  const topProducts =
+    report.product_performance.highest_moving_items;
+
+  if (topProducts.length === 0) {
+    csvContent +=
+      "No stock transactions logged within this date range.,0,0.00\n";
+  } else {
+    topProducts.forEach((item) => {
+      // Remove commas from product names so they don't
+      // break CSV columns.
+      const safeName = String(item.productName)
+        .replace(/,/g, " ")
+        .replace(/\r?\n/g, " ");
+
+      csvContent +=
+        `${safeName},${item.unitsSold},${item.revenueGenerated.toFixed(
+          2
+        )}\n`;
+    });
+  }
+
+  // ============================================================
+  // 4. WRITE CSV TO DISK
+  // ============================================================
+
+  const outputFilePath = path.join(
+    storageDirectory,
+    `Baazio_Report_${jobId}.csv`
+  );
+
+  await fs.promises.writeFile(
+    outputFilePath,
+    csvContent,
+    "utf8"
+  );
+
+  // ============================================================
+  // 5. CACHE SUCCESS STATUS
+  // ============================================================
+
   const cacheDataPayload = {
     status: "COMPLETED",
-    fileUrl: `/api/download-report/${jobId}.csv` // Pass file types cleanly down parameters
+    fileUrl: `/api/download-report/${jobId}/csv`,
   };
-  
-  await redis.set(`csv:report:status:${jobId}`, JSON.stringify(cacheDataPayload), "EX", 24 * 60 * 60);
-  console.log(`✅ [Baazio Workers]: CSV Spreadsheet [${jobId}] completely written to disk and cached in Redis.`);
+
+  await redis.set(
+    `csv:report:status:${jobId}`,
+    JSON.stringify(cacheDataPayload),
+    "EX",
+    24 * 60 * 60
+  );
+
+  console.log(
+    `✅ [Baazio Workers]: CSV Spreadsheet [${jobId}] completely written to disk and cached in Redis.`
+  );
 };
