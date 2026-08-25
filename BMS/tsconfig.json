@@ -2,22 +2,19 @@
   "compilerOptions": {
     "rootDir": "./",
     "outDir": "./dist",
-
     "target": "ES2022",
     "module": "commonjs",
 
-    /* 💡 ADD THIS LINE TO FIX THE RENDER BUILD FAILURE */
+    /* 💡 Hardcode the absolute relative track to local dependencies */
     "typeRoots": ["./node_modules/@types"],
     "types": ["node"],
 
     "sourceMap": true,
     "declaration": false,
     "declarationMap": false,
-
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
-
     "esModuleInterop": true,
     "skipLibCheck": true
   },
