@@ -4,7 +4,7 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-   "build": "npx prisma generate && npx prisma migrate deploy && tsc",
+    "build": "npx prisma generate && npx prisma migrate deploy && tsc",
     "start": "node dist/server.js",
     "dev": "nodemon --watch . --ext ts --exec npx tsx server.ts"
   },
