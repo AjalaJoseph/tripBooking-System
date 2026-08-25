@@ -20,7 +20,7 @@ export const app:Application = express()
 // });
 const corsConfigurationOptions: CorsOptions = {
   origin: process.env.NODE_ENV === "production" 
-    ? "https://vercel.app" // Your live client website URL
+    ? process.env.ALLOWED_FRONTEND_URL // Your live client website URL
     : "http://localhost:5173", 
    credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS",],

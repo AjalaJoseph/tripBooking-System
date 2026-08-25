@@ -4,9 +4,12 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "nodemon --watch . --ext ts --exec npx tsx server.ts"
-  },
+  "prebuild": "prisma generate",
+  "build": "tsc",
+  "postinstall": "prisma generate",
+  "start": "node dist/server.js",
+  "dev": "nodemon --watch . --ext ts --exec npx tsx server.ts"
+},
   "keywords": [],
   "author": "",
   "license": "ISC",

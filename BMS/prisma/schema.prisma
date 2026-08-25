@@ -149,7 +149,7 @@ model Sale {
 
   // Relations
   business Business   @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  user     User       @relation(fields: [userId], references: [id])
+  user     User       @relation(fields: [userId], references: [id], onDelete: SetNull)
   items    SaleItem[] // Links to individual line items
 
   // Indexes optimized for date-filtered analytics (daily, weekly, monthly, yearly)
