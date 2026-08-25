@@ -6,7 +6,7 @@ import { logger } from "../config/logger";
 import { runWithPaystackBreaker } from "../ultil/paystackBreaker";
 import { getPaymentService, updateSubscriptionService } from "../services/subscriptionService";
 dotenv.config()
-const PAYSTACK_KEY = process.env.PAYSTACK_TEST_KEY || " "
+const PAYSTACK_KEY = process.env.PAYSTACK_SECRET_KEY || " "
 export const handleInitializeSubscriptionPayment = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try{
         
