@@ -6,6 +6,8 @@
     "target": "ES2022",
     "module": "commonjs",
 
+    /* 💡 ADD THIS LINE TO FIX THE RENDER BUILD FAILURE */
+    "typeRoots": ["./node_modules/@types"],
     "types": ["node"],
 
     "sourceMap": true,
