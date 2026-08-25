@@ -5,8 +5,11 @@
     "target": "ES2022",
     "module": "commonjs",
 
-    /* 💡 Hardcode the absolute relative track to local dependencies */
-    "typeRoots": ["./node_modules/@types"],
+    /* 💡 This array explicitly covers both the relative paths */
+    "typeRoots": [
+      "./node_modules/@types",
+      "../node_modules/@types"
+    ],
     "types": ["node"],
 
     "sourceMap": true,
