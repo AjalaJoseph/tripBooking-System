@@ -60,7 +60,7 @@ export const handleBusinessLogin = async (req: Request, res: Response, next: Nex
       httpOnly: true,
       path:"/",
       secure: process.env.NODE_ENV === "production", // Active HTTPS only in production
-      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      sameSite: "none",
       maxAge: 7 * 24 * 60 * 60 * 1000,
       partitioned: process.env.NODE_ENV === "production"
     });
@@ -112,7 +112,7 @@ export const handleStaffLogin = async (req: Request, res: Response, next: NextFu
       httpOnly: true,
       path:"/",
       secure: process.env.NODE_ENV === "production", // Active HTTPS only in production
-      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+       sameSite: "none",
       maxAge: 7 * 24 * 60 * 60 * 1000,
       partitioned: process.env.NODE_ENV === "production"
     });
