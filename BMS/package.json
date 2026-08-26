@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "dist/server.js",
   "scripts": {
-   "build": "npx prisma generate && npx prisma migrate deploy && tsc && xcopy /E /I /Y src\\generated\\prisma dist\\src\\generated\\prisma",
+    "build": "npx prisma generate && npx prisma migrate deploy && tsc && node -e \"require('fs').cpSync('./src/generated/prisma', './dist/src/generated/prisma', {recursive: true, force: true});\"",
     "start": "node dist/server.js",
     "dev": "nodemon --watch . --ext ts --exec npx tsx server.ts"
   },
