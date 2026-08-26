@@ -11,7 +11,7 @@ if (process.env.SENTRY_DSN) {
   Sentry.init({
     dsn: process.env.SENTRY_DSN,
     environment: process.env.NODE_ENV || 'development',
-    release: "bizflow-backend@1.0.0", 
+    release: "baazio-backend@1.0.0", 
     tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
     debug: false
   });
