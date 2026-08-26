@@ -1,19 +1,27 @@
 import dotenv from "dotenv";
 import nodeMailer, { Transporter } from "nodemailer";
-import dns from "dns"; // 💡 Import Node's native DNS module
+import dns from "dns"; 
 
 dotenv.config();
 
-export const transporter: Transporter = nodeMailer.createTransport({
+// Define a structured configuration object with strict typing
+const mailOptions = {
   service: "gmail",
   auth: {
     user: process.env.email_user,
     pass: process.env.email_password 
   },
-  // 🚀 CRITICAL FIX: Forces Nodemailer to use IPv4 instead of Render's broken IPv6 routing
-  dnsLookup: (hostname, options, callback) => {
+  // Explicitly type the parameters to pass "noImplicitAny" rules
+  dnsLookup: (
+    hostname: string, 
+    options: dns.LookupOptions, 
+    callback: (err: NodeJS.ErrnoException | null, address: string, family: number) => void
+  ) => {
     dns.lookup(hostname, { family: 4 }, (err, address, family) => {
       callback(err, address, family);
     });
   }
-});
+};
+
+// Pass the configuration explicitly into the transporter instantiation
+export const transporter: Transporter = nodeMailer.createTransport(mailOptions as any);
