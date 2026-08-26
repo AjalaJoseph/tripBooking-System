@@ -61,7 +61,8 @@ export const handleBusinessLogin = async (req: Request, res: Response, next: Nex
       path:"/",
       secure: process.env.NODE_ENV === "production", // Active HTTPS only in production
       sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-      maxAge: 7 * 24 * 60 * 60 * 1000 // Lasts for exactly 7 days
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+      partitioned: process.env.NODE_ENV === "production"
     });
 
     // Send the access token and profile metadata to the client dashboard browser
@@ -112,7 +113,8 @@ export const handleStaffLogin = async (req: Request, res: Response, next: NextFu
       path:"/",
       secure: process.env.NODE_ENV === "production", // Active HTTPS only in production
       sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-      maxAge: 7 * 24 * 60 * 60 * 1000 // Lasts for exactly 7 days
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+      partitioned: process.env.NODE_ENV === "production"
     });
 
     // Send the access token and profile metadata to the client dashboard browser
