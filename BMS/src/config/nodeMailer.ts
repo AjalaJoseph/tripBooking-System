@@ -3,7 +3,8 @@ import nodeMailer, { Transporter } from "nodemailer";
 import dns from "dns"; 
 
 dotenv.config();
-
+const smtpUser =process.env.email_user || "";
+const smtpPass = process.env.email_password || "";
 const mailOptions = {
   // 1. Drop the generic "service" string and target Google directly
   host: "://gmail.com",
@@ -11,8 +12,8 @@ const mailOptions = {
   secure: false, // Must be false for port 587, true for port 465
   
   auth: {
-    user: process.env.email_user,
-    pass: process.env.email_password 
+    user: smtpUser,
+    pass: smtpPass 
   },
   
   // 2. Increase connection timeouts so Render has time to process the proxy handshake
