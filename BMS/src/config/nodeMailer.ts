@@ -4,14 +4,22 @@ import dns from "dns";
 
 dotenv.config();
 
-// Define a structured configuration object with strict typing
 const mailOptions = {
-  service: "gmail",
+  // 1. Drop the generic "service" string and target Google directly
+  host: "://gmail.com",
+  port: 587, // Try 587 first; if it times out, switch this number to 465
+  secure: false, // Must be false for port 587, true for port 465
+  
   auth: {
     user: process.env.email_user,
     pass: process.env.email_password 
   },
-  // Explicitly type the parameters to pass "noImplicitAny" rules
+  
+  // 2. Increase connection timeouts so Render has time to process the proxy handshake
+  connectionTimeout: 20000, // 20 seconds
+  greetingTimeout: 20000,
+  socketTimeout: 30000,
+
   dnsLookup: (
     hostname: string, 
     options: dns.LookupOptions, 
@@ -23,5 +31,4 @@ const mailOptions = {
   }
 };
 
-// Pass the configuration explicitly into the transporter instantiation
 export const transporter: Transporter = nodeMailer.createTransport(mailOptions as any);
