@@ -4,15 +4,15 @@ import { prisma } from "../config/db.js";
  * Fetches the currently active subscription record along with its plan details.
  */
 export const getActiveSubscription = async (businessId: string) => {
-  return await prisma.subscription.findFirst({
+  const sub = await prisma.subscription.findUnique({
     where: {
-      business_id: businessId,
-      status: "active"
+      business_id:businessId
     },
     include: {
       plan: true // Join the parent Plan table to read max_staff and max_sales caps
     }
   });
+  return  sub
 };
 
 /**

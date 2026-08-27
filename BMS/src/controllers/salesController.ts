@@ -171,7 +171,6 @@ export const countSalesController = async (req: Request, res: Response, next: Ne
     // 1. Extract identification context injected by your middleware pipeline
     const { id } = (req as any).user;
     let currentSalesCount = 0;
-
     const currentSales = await getTotalSalesCount(id)
     if(!currentSales){
       return res.status(400).json({

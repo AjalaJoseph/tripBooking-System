@@ -452,12 +452,19 @@ export const editStaffProfileService = async (businessId:string, staff_id:any, u
 //   get staff account data
 export const staffProfile = async (email:string) =>{
     const data = await getStaffData(email)
+    if(!data){
+        return null
+    }
     delete (data as any).password
     return data
 }
 //   get business account data
 export const businessProfile = async (email:string) =>{
     const profileData = await getBusinessAccount(email)
+    if (!profileData) {
+    return null;
+  }
+
     delete (profileData as any ).password
     return profileData
 }
@@ -608,7 +615,7 @@ export const refreshTokenRotationService = async (email:string, id:string, role:
                 reuseDetected: true,
                 };
             }
-        const {token: newRefreshToken, jti: newJti,} = generateRefreshToken(email,id,familyId,role);
+        const {token: newRefreshToken, jti: newJti,} = generateRefreshToken(email, id, familyId, role);
         const newRefreshTokenHash = hashRefreshToken(newRefreshToken)
         await redis.set( `refresh:${newJti}`, JSON.stringify({userId: id, refresh: newRefreshTokenHash,}),"EX",REFRESH_TOKEN_TTL );
         await redis.sadd(`refresh-family:${familyId}`, newJti);

@@ -1,7 +1,9 @@
 import { countTenantSales, getActiveSubscription } from "../models/midllewareMolde";
 //  get usauge sales data
 export const getTotalSalesCount = async(businessId:string) =>{
+    console.log(businessId)
     const activePlan= await  getActiveSubscription(businessId)
+    console.log(activePlan)
     if(!activePlan){
         return;
     }

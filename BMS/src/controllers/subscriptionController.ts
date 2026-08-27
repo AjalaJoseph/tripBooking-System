@@ -26,7 +26,7 @@ export const handleInitializeSubscriptionPayment = async (req: Request, res: Res
          const PaystackPayload ={
             email:email,
             amount: Number(amountInKobo), // Frontend redirect post-payment
-            channels: ["card"], 
+            // channels: ["card"], 
             callback_url:callback_url,
            metadata: { 
               businessId: id,          // Renamed to businessId to match model schema parameters perfectly
@@ -42,7 +42,7 @@ export const handleInitializeSubscriptionPayment = async (req: Request, res: Res
                   Authorization: `Bearer ${PAYSTACK_KEY}`,
                   "Content-Type": "application/json",
                 },
-                timeout: 5000,
+                timeout: 30000 ,
               }
             )
           );
@@ -59,8 +59,13 @@ export const handleInitializeSubscriptionPayment = async (req: Request, res: Res
             } else {
             res.status(502).json({ status: "fail", message: "Bad Gateway: Paystack token service failed." });
             }
-    }catch(error){
-        return next(error)
+    }catch (error: any) {
+      logger.error("PAYSTACK RESPONSE", {
+        status: error?.response?.status,
+        data: error?.response?.data
+      });
+
+      next(error);
     }
 }
 

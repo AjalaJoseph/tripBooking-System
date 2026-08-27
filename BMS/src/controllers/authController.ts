@@ -363,7 +363,7 @@ export const handleGetDynamicProfileData = async (req:Request, res:Response, nex
       })
     }
   }catch(error){
-    return next(error)
+  next(error);
   }
 }
 
@@ -498,12 +498,12 @@ export const refreshTokenController = async(req:Request, res:Response, next:Next
   try{
     const {email, id, role, jti:oldJti, familyId} = (req as any).user
         const newAccessToken =await generateAccessToken(email, id, role)
-       const newRefreshToken = await refreshTokenRotationService(email, id, role, oldJti, familyId) 
+        const newRefreshToken = await refreshTokenRotationService(email, id, role, oldJti, familyId); 
         //  console.log("accessToken", newAccessToken)
        res.cookie("refreshToken", newRefreshToken.refreshToken, {
           httpOnly: true,
           secure: process.env.NODE_ENV === "production",
-          sameSite: "strict",
+          sameSite: "none",
           maxAge: 7 * 24 * 60 * 60 * 1000,
           path: "/",
         });
