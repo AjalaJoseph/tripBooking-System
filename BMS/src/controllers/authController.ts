@@ -161,7 +161,7 @@ export const logoutController = async (req: Request, res: Response, next: NextFu
     // 3. 🧼 WIPE CLIENT COOKIES BROWSER STORAGE CACHE
     res.clearCookie('refreshToken', {
       httpOnly: true,
-      sameSite: 'strict',
+      sameSite: 'none',
       secure: process.env.NODE_ENV === 'production',
       path: "/"
     });
