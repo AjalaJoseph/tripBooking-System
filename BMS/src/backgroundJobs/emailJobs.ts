@@ -1,18 +1,26 @@
 import { transporter } from "../config/nodeMailer";
 import dotenv from "dotenv"
 import resend from "../config/resend";
+import { sendEmail } from "../config/bravo";
 import { staffWelcomeEmailContent } from "../mails/sendWelcomeEmailToStaff";
 import { generateStaffUpdateProfile } from "../mails/updateProfileMail";
 import { passwordResetOtpEmailContent } from "../mails/resetPassword";
 dotenv.config()
 export const sendStaffWelcomeEmail = async (data:any)=>{
     // console.log("email job",data)
-    await resend.emails.send({
-      from:'"Baazio No-Reply" <onboarding@resend.dev>',
-      to:data.staff_email,
-      subject:'🚀 Welcome to the Team - Your Baazio Workstation Access Credentials',
-      html:staffWelcomeEmailContent(data)
-    })
+     await sendEmail({
+    // Optional: Only include if you want to override the default sender name/email
+    from: { name: "Baazio No-Reply", email: process.env.email_user || "" }, 
+    to: data.staff_email,
+    subject: '🚀 Welcome to the Team - Your Baazio Workstation Access Credentials',
+    html: staffWelcomeEmailContent(data)
+  });
+    // await resend.emails.send({
+    //   from:'"Baazio No-Reply" <onboarding@resend.dev>',
+    //   to:data.staff_email,
+    //   subject:'🚀 Welcome to the Team - Your Baazio Workstation Access Credentials',
+    //   html:staffWelcomeEmailContent(data)
+    // })
     // await transporter.sendMail({
     //      from: '"Baazio No-Reply" <noreply@Baazio.System>', 
     //     to: data.staff_email,

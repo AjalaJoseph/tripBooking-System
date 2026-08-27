@@ -12,6 +12,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@getbrevo/brevo": "^6.0.3",
     "@prisma/client": "^6.19.3",
     "@sentry/node": "^10.65.0",
     "axios": "^1.18.1",
