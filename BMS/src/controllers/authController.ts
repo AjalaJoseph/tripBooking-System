@@ -505,7 +505,7 @@ export const refreshTokenController = async(req:Request, res:Response, next:Next
           secure: process.env.NODE_ENV === "production",
           sameSite: "none",
           maxAge: 7 * 24 * 60 * 60 * 1000,
-          partitioned: process.env.NODE_ENV === "production"
+          partitioned: process.env.NODE_ENV === "production",
           path: "/",
         });
         tokenRotationCounter.inc({ status: "success", breach_detected: "false" });
