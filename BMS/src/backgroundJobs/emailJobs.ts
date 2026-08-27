@@ -8,7 +8,7 @@ dotenv.config()
 export const sendStaffWelcomeEmail = async (data:any)=>{
     // console.log("email job",data)
     await resend.emails.send({
-      from:'"Baazio No-Reply" <noreply@Baazio.System>',
+      from:'"Baazio No-Reply" <onboarding@resend.dev>',
       to:data.staff_email,
       subject:'🚀 Welcome to the Team - Your Baazio Workstation Access Credentials',
       html:staffWelcomeEmailContent(data)
