@@ -1,13 +1,16 @@
 import dotenv from "dotenv";
-import nodeMailer, { Transporter } from "nodemailer";
-import dns from "dns";
+import nodemailer, { Transporter } from "nodemailer";
+import dns from "node:dns";
 
 dotenv.config();
+
+// Prefer IPv4 on environments where IPv6 outbound SMTP is unavailable
+dns.setDefaultResultOrder("ipv4first");
 
 const smtpUser = process.env.email_user || "";
 const smtpPass = process.env.email_password || "";
 
-const mailOptions = {
+export const transporter: Transporter = nodemailer.createTransport({
   host: "smtp.gmail.com",
   port: 587,
   secure: false,
@@ -20,25 +23,4 @@ const mailOptions = {
   connectionTimeout: 20000,
   greetingTimeout: 20000,
   socketTimeout: 30000,
-
-  dnsLookup: (
-    hostname: string,
-    options: dns.LookupOptions,
-    callback: (
-      err: NodeJS.ErrnoException | null,
-      address: string,
-      family: number
-    ) => void
-  ) => {
-    dns.lookup(
-      hostname,
-      { family: 4 },
-      (err, address, family) => {
-        callback(err, address, family);
-      }
-    );
-  },
-};
-
-export const transporter: Transporter =
-  nodeMailer.createTransport(mailOptions as any);
+});
