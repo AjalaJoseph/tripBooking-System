@@ -20,7 +20,7 @@ export const transporter: Transporter = nodemailer.createTransport({
     pass: smtpPass,
   },
 
-  connectionTimeout: 20000,
-  greetingTimeout: 20000,
-  socketTimeout: 30000,
+   connectionTimeout: 30_000,
+  greetingTimeout: 30_000,
+  socketTimeout: 60_000,
 });
