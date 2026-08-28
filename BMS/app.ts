@@ -29,7 +29,7 @@ const corsConfigurationOptions: CorsOptions = {
 };
 app.set("trust proxy", 1);
 app.options("/api/metrics", cors()); // Automatically answers preflight requests
-app.use("/api", cors(), metricsRoute); 
+app.get("/api/metrics", cors(), metricsRoute); 
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }, // Allows React to read images/data streams
   crossOriginOpenerPolicy: { policy: "unsafe-none" }      // Prevents cookie blocking across localhost ports
