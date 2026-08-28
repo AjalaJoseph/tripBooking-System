@@ -27,7 +27,9 @@ const corsConfigurationOptions: CorsOptions = {
   allowedHeaders: ["Content-Type", "Authorization", "idempotency-key", "x-paystack-signature"],
   exposedHeaders: ["x-paystack-signature"],
 };
-app.set("trust proxy", 1); 
+app.set("trust proxy", 1);
+app.options("/api/metrics", cors()); // Automatically answers preflight requests
+app.use("/api", cors(), metricsRoute); 
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }, // Allows React to read images/data streams
   crossOriginOpenerPolicy: { policy: "unsafe-none" }      // Prevents cookie blocking across localhost ports
@@ -52,5 +54,5 @@ app.use("/api/sales", saleRouter)
 app.use("/api", reportRouter)
 app.use("/api", subscriptionRouter)
 app.use("/api", healthRouter)
-app.use("/api", metricsRoute)
+
 app.use(globalErrorHandler)
